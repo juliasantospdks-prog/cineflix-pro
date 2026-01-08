@@ -11,7 +11,24 @@ interface AshleyChatProps {
   onClose: () => void;
 }
 
-type ChatStep = 'greeting' | 'name' | 'plans' | 'upsell' | 'checkout' | 'recovery';
+type ChatStep = 'greeting' | 'name' | 'gender' | 'recommendations' | 'plans' | 'upsell' | 'checkout' | 'recovery';
+type UserGender = 'male' | 'female' | null;
+
+const MALE_RECOMMENDATIONS = [
+  '🎬 **Ação e Adrenalina**: Filmes de tirar o fôlego com cenas explosivas!',
+  '⚽ **Futebol ao Vivo**: Jogos da Champions League, Libertadores e mais!',
+  '🦸 **Super-Heróis**: Marvel, DC e os maiores heróis do universo!',
+  '🚗 **Velozes e Furiosos**: Toda a franquia em qualidade máxima!',
+  '🎮 **Documentários Gaming**: E-sports e a história dos games!'
+];
+
+const FEMALE_RECOMMENDATIONS = [
+  '🌸 **K-Dramas Exclusivos**: Os doramas mais assistidos do mundo!',
+  '💕 **Séries Romance**: As histórias de amor mais emocionantes!',
+  '👑 **Reality Shows**: BBB, casamentos, competições e muito mais!',
+  '🎭 **Séries Dramáticas**: Grey\'s Anatomy, This Is Us e muito mais!',
+  '✨ **Turcos e Mexicanos**: As novelas que todo mundo ama!'
+];
 
 const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -19,6 +36,7 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
   const [isTyping, setIsTyping] = useState(false);
   const [step, setStep] = useState<ChatStep>('greeting');
   const [userName, setUserName] = useState('');
+  const [userGender, setUserGender] = useState<UserGender>(null);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -76,6 +94,23 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
     return !bad.includes(t.toLowerCase());
   };
 
+  // Detect name patterns like "me chamo Lucas", "sou a Maria", "meu nome é João"
+  const extractName = (text: string): string | null => {
+    const patterns = [
+      /(?:me\s+chamo|meu\s+nome\s+[eé]|sou\s+[oa]?\s*|[eé]\s+[oa]?\s*)([A-Za-zÀ-ÿ]+)/i,
+      /^([A-Za-zÀ-ÿ]+)$/i
+    ];
+    
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match && match[1] && isValidName(match[1])) {
+        return match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+      }
+    }
+    
+    return null;
+  };
+
   const handleSend = () => {
     if (!input.trim()) return;
     
@@ -83,20 +118,71 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
     setInput('');
     addUserMessage(text);
 
-    if (step === 'name' && isValidName(text)) {
-      setUserName(text);
-      setTimeout(() => {
-        addBotMessage(`Prazer em te conhecer, ${text}! 😊`, 800);
-      }, 500);
-      setTimeout(() => {
-        addBotMessage('Vou te mostrar nossos planos incríveis. Escolha o melhor para você! 🎯', 1000);
-        setStep('plans');
-      }, 2500);
-    } else if (step === 'name') {
-      setTimeout(() => {
-        addBotMessage('Por favor, me diga seu nome para eu te chamar! 😊', 800);
-      }, 500);
+    if (step === 'name') {
+      const extractedName = extractName(text);
+      if (extractedName) {
+        setUserName(extractedName);
+        setTimeout(() => {
+          addBotMessage(`Prazer em te conhecer, ${extractedName}! 😊`, 800);
+        }, 500);
+        setTimeout(() => {
+          addBotMessage('Pra eu te recomendar os melhores conteúdos, me conta: você é homem ou mulher? 🤔', 1000);
+          setStep('gender');
+        }, 2500);
+      } else {
+        setTimeout(() => {
+          addBotMessage('Por favor, me diga seu nome para eu te chamar! 😊 Ex: "Me chamo Lucas" ou só "Maria"', 800);
+        }, 500);
+      }
+    } else if (step === 'gender') {
+      const lowerText = text.toLowerCase();
+      const isMale = /\b(homem|masculino|macho|cara|ele|boy|men|man|sou\s+ele)\b/i.test(lowerText);
+      const isFemale = /\b(mulher|feminino|f[eê]mea|mina|ela|garota|girl|woman|sou\s+ela)\b/i.test(lowerText);
+      
+      if (isMale) {
+        setUserGender('male');
+        showGenderRecommendations('male');
+      } else if (isFemale) {
+        setUserGender('female');
+        showGenderRecommendations('female');
+      } else {
+        setTimeout(() => {
+          addBotMessage('Me diz: você é homem ou mulher? Assim posso te recomendar o melhor conteúdo! 😊', 800);
+        }, 500);
+      }
     }
+  };
+
+  const showGenderRecommendations = (gender: 'male' | 'female') => {
+    setStep('recommendations');
+    const recommendations = gender === 'male' ? MALE_RECOMMENDATIONS : FEMALE_RECOMMENDATIONS;
+    const intro = gender === 'male' 
+      ? `Show, ${userName}! 💪 Preparei o melhor catálogo pra você!`
+      : `Perfeito, ${userName}! 💖 Tenho o conteúdo ideal pra você!`;
+    
+    setTimeout(() => {
+      addBotMessage(intro, 800);
+    }, 500);
+
+    setTimeout(() => {
+      const recMessage = `
+<div class="space-y-2 text-sm">
+  ${recommendations.map(rec => `<div>${rec}</div>`).join('')}
+</div>
+      `;
+      addBotMessage(recMessage, 1000);
+    }, 2500);
+
+    setTimeout(() => {
+      addBotMessage('E tem muito mais! 🔥 Agora escolha seu plano para desbloquear tudo:', 1000);
+      setStep('plans');
+    }, 5000);
+  };
+
+  const handleSelectGender = (gender: 'male' | 'female') => {
+    setUserGender(gender);
+    addUserMessage(gender === 'male' ? 'Sou homem' : 'Sou mulher');
+    showGenderRecommendations(gender);
   };
 
   const handleSelectPlan = (plan: Plan) => {
@@ -132,7 +218,6 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
     setStep('checkout');
     
     if (selectedUpsells.length > 0) {
-      // Redirect to WhatsApp for upsells
       const planName = selectedPlan?.name || '';
       const upsellNames = selectedUpsells
         .map((id) => upsells.find((u) => u.id === id)?.name)
@@ -149,7 +234,6 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
         window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
       }, 2000);
     } else {
-      // Redirect to Kirvano for direct payment
       addBotMessage(`🎉 Redirecionando para pagamento seguro...`, 800);
       
       setTimeout(() => {
@@ -212,8 +296,9 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
         {/* Step indicators */}
         <div className="px-4 py-3 bg-black/30 border-b border-white/5">
           <div className="step-indicator justify-center">
-            <div className={cn('step-dot', step === 'greeting' || step === 'name' ? 'active' : 'completed')} />
-            <div className={cn('step-dot', step === 'plans' ? 'active' : step === 'upsell' || step === 'checkout' ? 'completed' : '')} />
+            <div className={cn('step-dot', ['greeting', 'name'].includes(step) ? 'active' : 'completed')} />
+            <div className={cn('step-dot', step === 'gender' ? 'active' : ['recommendations', 'plans', 'upsell', 'checkout'].includes(step) ? 'completed' : '')} />
+            <div className={cn('step-dot', step === 'plans' || step === 'recommendations' ? 'active' : ['upsell', 'checkout'].includes(step) ? 'completed' : '')} />
             <div className={cn('step-dot', step === 'upsell' ? 'active' : step === 'checkout' ? 'completed' : '')} />
             <div className={cn('step-dot', step === 'checkout' ? 'active' : '')} />
           </div>
@@ -228,6 +313,26 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
               dangerouslySetInnerHTML={{ __html: msg.content }}
             />
           ))}
+
+          {/* Gender selection buttons */}
+          {step === 'gender' && (
+            <div className="flex gap-3 animate-slide-up">
+              <button
+                onClick={() => handleSelectGender('male')}
+                className="flex-1 p-4 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 transition-all"
+              >
+                <span className="text-3xl mb-2 block">👨</span>
+                <span className="font-semibold text-white">Sou Homem</span>
+              </button>
+              <button
+                onClick={() => handleSelectGender('female')}
+                className="flex-1 p-4 rounded-xl bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/30 transition-all"
+              >
+                <span className="text-3xl mb-2 block">👩</span>
+                <span className="font-semibold text-white">Sou Mulher</span>
+              </button>
+            </div>
+          )}
 
           {/* Plan selection */}
           {step === 'plans' && !selectedPlan && (
@@ -314,14 +419,14 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
         </div>
 
         {/* Input */}
-        {(step === 'name' || step === 'recovery') && (
+        {(step === 'name' || step === 'gender' || step === 'recovery') && (
           <div className="p-4 border-t border-white/5 bg-black/30">
             <div className="flex gap-2">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Seu nome ou resposta..."
+                placeholder={step === 'name' ? 'Ex: Me chamo Lucas...' : step === 'gender' ? 'Homem ou Mulher?' : 'Sua resposta...'}
                 className="flex-1 bg-cinema-dark border-white/10 focus:border-cinema-red"
               />
               <Button variant="cinema" size="icon" onClick={handleSend}>
