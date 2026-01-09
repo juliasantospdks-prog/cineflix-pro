@@ -1,6 +1,9 @@
-import { Check, Sparkles, Crown, Zap } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { plans, KIRVANO_LINKS } from '@/data/cineflix';
 import { cn } from '@/lib/utils';
+import planMensalIcon from '@/assets/plan-mensal-icon.png';
+import planTrimestralIcon from '@/assets/plan-trimestral-icon.png';
+import planAnualIcon from '@/assets/plan-anual-icon.png';
 
 const PlansSection = () => {
   const handleSelectPlan = (planId: string) => {
@@ -12,10 +15,10 @@ const PlansSection = () => {
 
   const getIcon = (planId: string) => {
     switch (planId) {
-      case 'mensal': return <Zap className="w-8 h-8" />;
-      case 'trimestral': return <Sparkles className="w-8 h-8" />;
-      case 'anual': return <Crown className="w-8 h-8" />;
-      default: return <Zap className="w-8 h-8" />;
+      case 'mensal': return planMensalIcon;
+      case 'trimestral': return planTrimestralIcon;
+      case 'anual': return planAnualIcon;
+      default: return planMensalIcon;
     }
   };
 
@@ -25,7 +28,7 @@ const PlansSection = () => {
         {/* Header */}
         <div className="text-center mb-16">
           <span className="inline-block px-4 py-2 bg-cinema-red/20 text-cinema-red rounded-full text-sm font-bold mb-4">
-            💎 PLANOS EXCLUSIVOS
+            PLANOS EXCLUSIVOS
           </span>
           <h2 className="text-4xl md:text-5xl font-cinema font-bold text-white mb-4">
             Escolha seu <span className="text-cinema-red">Plano</span>
@@ -66,12 +69,16 @@ const PlansSection = () => {
                 {/* Icon and name */}
                 <div className="flex flex-col items-center mb-6">
                   <div className={cn(
-                    "w-16 h-16 rounded-2xl flex items-center justify-center mb-4",
+                    "w-20 h-20 rounded-2xl flex items-center justify-center mb-4 overflow-hidden",
                     plan.featured 
-                      ? "bg-cinema-red text-white" 
-                      : "bg-white/10 text-cinema-red"
+                      ? "bg-cinema-red/20" 
+                      : "bg-white/5"
                   )}>
-                    {getIcon(plan.id)}
+                    <img 
+                      src={getIcon(plan.id)} 
+                      alt={plan.name} 
+                      className="w-16 h-16 object-contain"
+                    />
                   </div>
                   <h3 className="text-xl font-bold text-white text-center">{plan.name}</h3>
                 </div>

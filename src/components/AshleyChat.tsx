@@ -5,30 +5,32 @@ import { Input } from '@/components/ui/input';
 import { ChatMessage, Plan, Upsell } from '@/types';
 import { plans, upsells, WHATSAPP_NUMBER, KIRVANO_LINKS } from '@/data/cineflix';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AshleyChatProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type ChatStep = 'greeting' | 'name' | 'gender' | 'recommendations' | 'plans' | 'upsell' | 'checkout' | 'recovery';
+type ChatStep = 'greeting' | 'name' | 'gender' | 'recommendations' | 'plans' | 'upsell' | 'checkout' | 'recovery' | 'freeChat';
 type UserGender = 'male' | 'female' | null;
 
 const MALE_RECOMMENDATIONS = [
-  '🎬 **Ação e Adrenalina**: Filmes de tirar o fôlego com cenas explosivas!',
-  '⚽ **Futebol ao Vivo**: Jogos da Champions League, Libertadores e mais!',
-  '🦸 **Super-Heróis**: Marvel, DC e os maiores heróis do universo!',
-  '🚗 **Velozes e Furiosos**: Toda a franquia em qualidade máxima!',
-  '🎮 **Documentários Gaming**: E-sports e a história dos games!'
+  '🎬 **Ação e Adrenalina**: Filmes de tirar o fôlego!',
+  '⚽ **Futebol ao Vivo**: Champions, Libertadores e mais!',
+  '🦸 **Super-Heróis**: Marvel, DC e os maiores heróis!',
+  '🚗 **Velozes e Furiosos**: Toda a franquia em 4K!',
 ];
 
 const FEMALE_RECOMMENDATIONS = [
-  '🌸 **K-Dramas Exclusivos**: Os doramas mais assistidos do mundo!',
-  '💕 **Séries Romance**: As histórias de amor mais emocionantes!',
-  '👑 **Reality Shows**: BBB, casamentos, competições e muito mais!',
-  '🎭 **Séries Dramáticas**: Grey\'s Anatomy, This Is Us e muito mais!',
-  '✨ **Turcos e Mexicanos**: As novelas que todo mundo ama!'
+  '🌸 **K-Dramas**: Os doramas mais assistidos!',
+  '💕 **Séries Romance**: Histórias de amor emocionantes!',
+  '👑 **Reality Shows**: BBB, casamentos e mais!',
+  '✨ **Novelas Turkas**: As novelas que todo mundo ama!',
 ];
+
+const TYPING_DELAY = 3000; // 3 seconds typing indicator
+const MESSAGE_INTERVAL = 5000; // 5 seconds between auto messages
 
 const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -39,7 +41,11 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
   const [userGender, setUserGender] = useState<UserGender>(null);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<Array<{role: string; content: string}>>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageQueueRef = useRef<string[]>([]);
+  const processingQueueRef = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -47,11 +53,22 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isTyping]);
 
-  const addBotMessage = useCallback((content: string, delay = 1500) => {
-    setIsTyping(true);
-    setTimeout(() => {
+  // Process message queue with delays
+  const processMessageQueue = useCallback(async () => {
+    if (processingQueueRef.current || messageQueueRef.current.length === 0) return;
+    
+    processingQueueRef.current = true;
+    
+    while (messageQueueRef.current.length > 0) {
+      const content = messageQueueRef.current.shift()!;
+      
+      // Show typing indicator
+      setIsTyping(true);
+      await new Promise(resolve => setTimeout(resolve, TYPING_DELAY));
+      
+      // Add message
       setIsTyping(false);
       const newMessage: ChatMessage = {
         id: Date.now().toString(),
@@ -59,9 +76,22 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
         sender: 'bot',
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, newMessage]);
-    }, delay);
+      setMessages(prev => [...prev, newMessage]);
+      setConversationHistory(prev => [...prev, { role: 'assistant', content }]);
+      
+      // Wait before next message
+      if (messageQueueRef.current.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+    
+    processingQueueRef.current = false;
   }, []);
+
+  const addBotMessage = useCallback((content: string) => {
+    messageQueueRef.current.push(content);
+    processMessageQueue();
+  }, [processMessageQueue]);
 
   const addUserMessage = (content: string) => {
     const newMessage: ChatMessage = {
@@ -70,19 +100,67 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
       sender: 'user',
       timestamp: new Date(),
     };
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages(prev => [...prev, newMessage]);
+    setConversationHistory(prev => [...prev, { role: 'user', content }]);
   };
 
+  // Get AI response
+  const getAIResponse = async (userMessage: string) => {
+    setIsAiLoading(true);
+    setIsTyping(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('ashley-chat', {
+        body: {
+          userMessage,
+          userName,
+          userGender,
+          conversationHistory,
+          step
+        }
+      });
+
+      if (error) throw error;
+      
+      // Simulate typing delay
+      await new Promise(resolve => setTimeout(resolve, TYPING_DELAY));
+      
+      setIsTyping(false);
+      const response = data?.response || 'Me conta mais sobre o que você procura!';
+      
+      const newMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: response,
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, newMessage]);
+      setConversationHistory(prev => [...prev, { role: 'assistant', content: response }]);
+      
+    } catch (error) {
+      console.error('AI response error:', error);
+      setIsTyping(false);
+      addBotMessage('Oi! Me conta o que você tá buscando que eu te ajudo! 😊');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  // Initial greeting sequence
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      addBotMessage('Olá! Sou Ashley da CineflixPayment! 👋', 500);
-      setTimeout(() => {
-        addBotMessage('Vou te ajudar a escolher o melhor plano para você! 🎬', 1000);
-      }, 2000);
-      setTimeout(() => {
-        addBotMessage('Qual é o seu nome? 😊', 1000);
+      const startSequence = async () => {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        addBotMessage('Olá! Sou Ashley da CineflixPayment! 👋');
+        
+        await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
+        addBotMessage('Vou te ajudar a escolher o melhor plano pra você! 🎬');
+        
+        await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
+        addBotMessage('Qual é o seu nome? 😊');
         setStep('name');
-      }, 4000);
+      };
+      startSequence();
     }
   }, [isOpen, messages.length, addBotMessage]);
 
@@ -90,11 +168,10 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
     const t = text.trim();
     if (t.length < 2 || t.length > 25) return false;
     if (/\d|[_@#$%^&*+=<>/\\|{}[\]~`]/.test(t)) return false;
-    const bad = ['bot', 'robô', 'robo', 'teste', 'test', 'admin', 'null', 'undefined', 'system', 'xpto'];
+    const bad = ['bot', 'robô', 'robo', 'teste', 'test', 'admin', 'null', 'undefined'];
     return !bad.includes(t.toLowerCase());
   };
 
-  // Detect name patterns like "me chamo Lucas", "sou a Maria", "meu nome é João"
   const extractName = (text: string): string | null => {
     const patterns = [
       /(?:me\s+chamo|meu\s+nome\s+[eé]|sou\s+[oa]?\s*|[eé]\s+[oa]?\s*)([A-Za-zÀ-ÿ]+)/i,
@@ -107,12 +184,11 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
         return match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
       }
     }
-    
     return null;
   };
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim() || isAiLoading) return;
     
     const text = input.trim();
     setInput('');
@@ -122,22 +198,19 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
       const extractedName = extractName(text);
       if (extractedName) {
         setUserName(extractedName);
-        setTimeout(() => {
-          addBotMessage(`Prazer em te conhecer, ${extractedName}! 😊`, 800);
-        }, 500);
-        setTimeout(() => {
-          addBotMessage('Pra eu te recomendar os melhores conteúdos, me conta: você é homem ou mulher? 🤔', 1000);
-          setStep('gender');
-        }, 2500);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        addBotMessage(`Prazer em te conhecer, ${extractedName}! 😊`);
+        await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
+        addBotMessage('Pra eu te recomendar os melhores conteúdos: você é homem ou mulher? 🤔');
+        setStep('gender');
       } else {
-        setTimeout(() => {
-          addBotMessage('Por favor, me diga seu nome para eu te chamar! 😊 Ex: "Me chamo Lucas" ou só "Maria"', 800);
-        }, 500);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        addBotMessage('Por favor, me diga seu nome! Ex: "Me chamo Lucas" ou só "Maria"');
       }
     } else if (step === 'gender') {
       const lowerText = text.toLowerCase();
-      const isMale = /\b(homem|masculino|macho|cara|ele|boy|men|man|sou\s+ele)\b/i.test(lowerText);
-      const isFemale = /\b(mulher|feminino|f[eê]mea|mina|ela|garota|girl|woman|sou\s+ela)\b/i.test(lowerText);
+      const isMale = /\b(homem|masculino|ele|cara|boy|man)\b/i.test(lowerText);
+      const isFemale = /\b(mulher|feminino|ela|mina|girl|woman)\b/i.test(lowerText);
       
       if (isMale) {
         setUserGender('male');
@@ -146,37 +219,32 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
         setUserGender('female');
         showGenderRecommendations('female');
       } else {
-        setTimeout(() => {
-          addBotMessage('Me diz: você é homem ou mulher? Assim posso te recomendar o melhor conteúdo! 😊', 800);
-        }, 500);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        addBotMessage('Me diz: você é homem ou mulher? 😊');
       }
+    } else if (step === 'freeChat' || step === 'recommendations' || step === 'plans') {
+      // Use AI for free conversation
+      await getAIResponse(text);
     }
   };
 
-  const showGenderRecommendations = (gender: 'male' | 'female') => {
+  const showGenderRecommendations = async (gender: 'male' | 'female') => {
     setStep('recommendations');
     const recommendations = gender === 'male' ? MALE_RECOMMENDATIONS : FEMALE_RECOMMENDATIONS;
     const intro = gender === 'male' 
-      ? `Show, ${userName}! 💪 Preparei o melhor catálogo pra você!`
-      : `Perfeito, ${userName}! 💖 Tenho o conteúdo ideal pra você!`;
+      ? `Show, ${userName}! 💪 Olha o catálogo que eu separei pra você:`
+      : `Perfeito, ${userName}! 💖 Preparei o conteúdo ideal pra você:`;
     
-    setTimeout(() => {
-      addBotMessage(intro, 800);
-    }, 500);
-
-    setTimeout(() => {
-      const recMessage = `
-<div class="space-y-2 text-sm">
-  ${recommendations.map(rec => `<div>${rec}</div>`).join('')}
-</div>
-      `;
-      addBotMessage(recMessage, 1000);
-    }, 2500);
-
-    setTimeout(() => {
-      addBotMessage('E tem muito mais! 🔥 Agora escolha seu plano para desbloquear tudo:', 1000);
-      setStep('plans');
-    }, 5000);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    addBotMessage(intro);
+    
+    await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
+    const recMessage = `<div class="space-y-2 text-sm">${recommendations.map(rec => `<div>${rec}</div>`).join('')}</div>`;
+    addBotMessage(recMessage);
+    
+    await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
+    addBotMessage('E tem muito mais! 🔥 Escolha seu plano abaixo pra desbloquear tudo:');
+    setStep('plans');
   };
 
   const handleSelectGender = (gender: 'male' | 'female') => {
@@ -185,30 +253,28 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
     showGenderRecommendations(gender);
   };
 
-  const handleSelectPlan = (plan: Plan) => {
+  const handleSelectPlan = async (plan: Plan) => {
     setSelectedPlan(plan);
     addUserMessage(`Quero o ${plan.name}`);
-    setTimeout(() => {
-      addBotMessage(`Excelente escolha, ${userName}! O ${plan.name} é perfeito! 🎉`, 800);
-    }, 500);
-    setTimeout(() => {
-      addBotMessage('Quer turbinar sua experiência com adicionais exclusivos? 🚀', 1000);
-      setStep('upsell');
-    }, 2500);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    addBotMessage(`Excelente escolha, ${userName}! O ${plan.name} é perfeito! 🎉`);
+    await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
+    addBotMessage('Quer turbinar sua experiência com adicionais exclusivos? 🚀');
+    setStep('upsell');
   };
 
   const toggleUpsell = (upsellId: string) => {
-    setSelectedUpsells((prev) =>
+    setSelectedUpsells(prev =>
       prev.includes(upsellId)
-        ? prev.filter((id) => id !== upsellId)
+        ? prev.filter(id => id !== upsellId)
         : [...prev, upsellId]
     );
   };
 
   const calculateTotal = (): number => {
     let total = selectedPlan?.price || 0;
-    selectedUpsells.forEach((id) => {
-      const upsell = upsells.find((u) => u.id === id);
+    selectedUpsells.forEach(id => {
+      const upsell = upsells.find(u => u.id === id);
       if (upsell) total += upsell.price;
     });
     return total;
@@ -220,7 +286,7 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
     if (selectedUpsells.length > 0) {
       const planName = selectedPlan?.name || '';
       const upsellNames = selectedUpsells
-        .map((id) => upsells.find((u) => u.id === id)?.name)
+        .map(id => upsells.find(u => u.id === id)?.name)
         .filter(Boolean)
         .join(', ');
       
@@ -228,45 +294,20 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
         `Olá! Vim pela Ashley. Quero comprar:\n📦 Plano: ${planName} - R$ ${selectedPlan?.price.toFixed(2)}\n🎁 Adicionais: ${upsellNames}\n💰 Total: R$ ${calculateTotal().toFixed(2)}`
       );
       
-      addBotMessage(`Perfeito! Como você escolheu adicionais, vou te passar para o WhatsApp para atendimento VIP! 💬`, 800);
+      addBotMessage('Perfeito! Vou te passar pro WhatsApp pra atendimento VIP! 💬');
       
       setTimeout(() => {
         window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
-      }, 2000);
+      }, 3000);
     } else {
-      addBotMessage(`🎉 Redirecionando para pagamento seguro...`, 800);
+      addBotMessage('🎉 Redirecionando pro pagamento seguro...');
       
       setTimeout(() => {
         const link = KIRVANO_LINKS[selectedPlan?.id || 'mensal'];
         window.open(link, '_blank');
-      }, 2000);
+      }, 3000);
     }
   };
-
-  // Exit intent detection
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isOpen && step !== 'checkout') {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
-    const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY <= 0 && isOpen && step === 'plans' && !selectedPlan) {
-        addBotMessage(`Ei ${userName || 'amigo'}! Não vai embora! 😢 Tenho uma oferta especial só pra você! Use o cupom VOLTA10 para 10% OFF! 🎁`, 500);
-        setStep('recovery');
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('mouseleave', handleMouseLeave);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('mouseleave', handleMouseLeave);
-    };
-  }, [isOpen, step, userName, selectedPlan, addBotMessage]);
 
   if (!isOpen) return null;
 
@@ -274,7 +315,7 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div 
         className="w-full max-w-md h-[85vh] max-h-[700px] bg-gradient-to-b from-cinema-panel to-cinema-dark rounded-2xl overflow-hidden flex flex-col shadow-2xl border border-white/5 animate-scale-in"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-cinema-red to-cinema-glow p-4 flex items-center gap-3">
@@ -283,7 +324,10 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
           </div>
           <div className="flex-1">
             <h3 className="font-bold text-white">CineflixPayment</h3>
-            <p className="text-white/80 text-sm">Ashley — Assistente VIP</p>
+            <p className="text-white/80 text-sm flex items-center gap-2">
+              Ashley — Assistente VIP
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -293,29 +337,23 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
           </button>
         </div>
 
-        {/* Step indicators */}
-        <div className="px-4 py-3 bg-black/30 border-b border-white/5">
-          <div className="step-indicator justify-center">
-            <div className={cn('step-dot', ['greeting', 'name'].includes(step) ? 'active' : 'completed')} />
-            <div className={cn('step-dot', step === 'gender' ? 'active' : ['recommendations', 'plans', 'upsell', 'checkout'].includes(step) ? 'completed' : '')} />
-            <div className={cn('step-dot', step === 'plans' || step === 'recommendations' ? 'active' : ['upsell', 'checkout'].includes(step) ? 'completed' : '')} />
-            <div className={cn('step-dot', step === 'upsell' ? 'active' : step === 'checkout' ? 'completed' : '')} />
-            <div className={cn('step-dot', step === 'checkout' ? 'active' : '')} />
-          </div>
-        </div>
-
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((msg) => (
+          {messages.map(msg => (
             <div
               key={msg.id}
-              className={cn('chat-bubble', msg.sender === 'bot' ? 'chat-bubble-bot' : 'chat-bubble-user')}
+              className={cn(
+                'max-w-[85%] p-3 rounded-2xl animate-fade-in',
+                msg.sender === 'bot' 
+                  ? 'bg-cinema-panel text-white rounded-bl-none' 
+                  : 'bg-cinema-red text-white ml-auto rounded-br-none'
+              )}
               dangerouslySetInnerHTML={{ __html: msg.content }}
             />
           ))}
 
           {/* Gender selection buttons */}
-          {step === 'gender' && (
+          {step === 'gender' && !isTyping && (
             <div className="flex gap-3 animate-slide-up">
               <button
                 onClick={() => handleSelectGender('male')}
@@ -335,9 +373,9 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
           )}
 
           {/* Plan selection */}
-          {step === 'plans' && !selectedPlan && (
+          {step === 'plans' && !selectedPlan && !isTyping && (
             <div className="space-y-3 animate-slide-up">
-              {plans.map((plan) => (
+              {plans.map(plan => (
                 <div
                   key={plan.id}
                   className={cn('plan-card cursor-pointer', plan.featured && 'featured')}
@@ -370,9 +408,9 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
           )}
 
           {/* Upsell selection */}
-          {step === 'upsell' && (
+          {step === 'upsell' && !isTyping && (
             <div className="space-y-3 animate-slide-up">
-              {upsells.map((upsell) => (
+              {upsells.map(upsell => (
                 <div
                   key={upsell.id}
                   className={cn('upsell-option', selectedUpsells.includes(upsell.id) && 'selected')}
@@ -406,11 +444,14 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
 
           {/* Typing indicator */}
           {isTyping && (
-            <div className="chat-bubble chat-bubble-bot w-20">
-              <div className="flex gap-1.5">
-                <div className="typing-dot" />
-                <div className="typing-dot" />
-                <div className="typing-dot" />
+            <div className="max-w-[85%] p-4 rounded-2xl bg-cinema-panel rounded-bl-none">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                <span className="text-white/50 text-sm ml-2">Ashley está escrevendo...</span>
               </div>
             </div>
           )}
@@ -419,17 +460,27 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
         </div>
 
         {/* Input */}
-        {(step === 'name' || step === 'gender' || step === 'recovery') && (
+        {(step === 'name' || step === 'gender' || step === 'recovery' || step === 'freeChat' || step === 'plans') && (
           <div className="p-4 border-t border-white/5 bg-black/30">
             <div className="flex gap-2">
               <Input
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                placeholder={step === 'name' ? 'Ex: Me chamo Lucas...' : step === 'gender' ? 'Homem ou Mulher?' : 'Sua resposta...'}
+                onChange={e => setInput(e.target.value)}
+                onKeyPress={e => e.key === 'Enter' && handleSend()}
+                placeholder={
+                  step === 'name' ? 'Ex: Me chamo Lucas...' : 
+                  step === 'gender' ? 'Homem ou Mulher?' : 
+                  'Digite sua mensagem...'
+                }
                 className="flex-1 bg-cinema-dark border-white/10 focus:border-cinema-red"
+                disabled={isTyping || isAiLoading}
               />
-              <Button variant="cinema" size="icon" onClick={handleSend}>
+              <Button 
+                variant="cinema" 
+                size="icon" 
+                onClick={handleSend}
+                disabled={isTyping || isAiLoading}
+              >
                 <Send className="w-5 h-5" />
               </Button>
             </div>
