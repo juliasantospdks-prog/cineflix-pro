@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, X, MessageCircle, Check } from 'lucide-react';
+import { Send, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChatMessage, Plan, Upsell } from '@/types';
 import { plans, upsells, WHATSAPP_NUMBER, KIRVANO_LINKS } from '@/data/cineflix';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import cineflixLogo from '@/assets/cineflix-logo.png';
 
 interface AshleyChatProps {
   isOpen: boolean;
@@ -173,15 +174,23 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
   };
 
   const extractName = (text: string): string | null => {
+    // Clean up the text
+    const cleanText = text.trim().toLowerCase();
+    
+    // Patterns to extract name from common phrases
     const patterns = [
-      /(?:me\s+chamo|meu\s+nome\s+[eé]|sou\s+[oa]?\s*|[eé]\s+[oa]?\s*)([A-Za-zÀ-ÿ]+)/i,
-      /^([A-Za-zÀ-ÿ]+)$/i
+      /(?:me\s+chamo|meu\s+nome\s+[eé]|sou\s+[oa]?\s*|chamo\s*[-–]?\s*me)\s+([A-Za-zÀ-ÿ]+)/i,
+      /(?:pode\s+me\s+chamar\s+de|meu\s+nome\s*[eé:]\s*)([A-Za-zÀ-ÿ]+)/i,
+      /^([A-Za-zÀ-ÿ]{2,20})$/i  // Single name
     ];
     
     for (const pattern of patterns) {
       const match = text.match(pattern);
-      if (match && match[1] && isValidName(match[1])) {
-        return match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+      if (match && match[1]) {
+        const potentialName = match[1].trim();
+        if (isValidName(potentialName)) {
+          return potentialName.charAt(0).toUpperCase() + potentialName.slice(1).toLowerCase();
+        }
       }
     }
     return null;
@@ -195,17 +204,24 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
     addUserMessage(text);
 
     if (step === 'name') {
-      const extractedName = extractName(text);
+      // Try to extract name from various patterns
+      let extractedName = extractName(text);
+      
+      // If no name found, check if the text itself could be a name
+      if (!extractedName && text.length >= 2 && text.length <= 20 && isValidName(text)) {
+        extractedName = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+      }
+      
       if (extractedName) {
         setUserName(extractedName);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1500));
         addBotMessage(`Prazer em te conhecer, ${extractedName}! 😊`);
         await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
         addBotMessage('Pra eu te recomendar os melhores conteúdos: você é homem ou mulher? 🤔');
         setStep('gender');
       } else {
         await new Promise(resolve => setTimeout(resolve, 1000));
-        addBotMessage('Por favor, me diga seu nome! Ex: "Me chamo Lucas" ou só "Maria"');
+        addBotMessage('Qual é o seu nome? 😊');
       }
     } else if (step === 'gender') {
       const lowerText = text.toLowerCase();
@@ -319,8 +335,8 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-cinema-red to-cinema-glow p-4 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-            <MessageCircle className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center overflow-hidden">
+            <img src={cineflixLogo} alt="CineflixPayment" className="w-10 h-10 object-contain" />
           </div>
           <div className="flex-1">
             <h3 className="font-bold text-white">CineflixPayment</h3>

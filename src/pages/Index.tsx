@@ -4,6 +4,7 @@ import HeroSection from '@/components/HeroSection';
 import TMDBGallery from '@/components/TMDBGallery';
 import TMDBTrailerModal from '@/components/TMDBTrailerModal';
 import PlansSection from '@/components/PlansSection';
+import Footer from '@/components/Footer';
 import ChatFAB from '@/components/ChatFAB';
 import AshleyChat from '@/components/AshleyChat';
 import { 
@@ -61,6 +62,7 @@ const Index = () => {
         </div>
         <PlansSection />
       </main>
+      <Footer />
       <ChatFAB onClick={() => setIsChatOpen(true)} />
       <AshleyChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       <TMDBTrailerModal movie={selectedMovie} isOpen={isTrailerOpen} onClose={() => { setIsTrailerOpen(false); setSelectedMovie(null); }} />
