@@ -91,17 +91,18 @@ const TMDBTrailerModal = ({ movie, isOpen, onClose }: TMDBTrailerModalProps) => 
           ) : trailer ? (
             <>
               <iframe
-                src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=${isMuted ? 1 : 0}&rel=0&modestbranding=1`}
+                src={`https://www.youtube-nocookie.com/embed/${trailer.key}?autoplay=1&mute=${isMuted ? 1 : 0}&rel=0&modestbranding=1&showinfo=0&controls=1&playsinline=1`}
                 title={title}
                 className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
+                style={{ border: 'none' }}
               />
               
               {/* Volume control */}
               <button
-                onClick={() => setIsMuted(!isMuted)}
-                className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
+                onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+                className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors z-10"
               >
                 {isMuted ? (
                   <VolumeX className="w-5 h-5 text-white" />
