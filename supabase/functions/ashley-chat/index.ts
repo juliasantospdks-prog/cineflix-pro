@@ -1,0 +1,101 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
+    }
+
+    const { userMessage, userName, userGender, conversationHistory, step } = await req.json();
+
+    const genderContext = userGender === 'male' 
+      ? 'O usuário é homem, então foque em: filmes de ação, futebol ao vivo, super-heróis, carros, games e aventura.'
+      : userGender === 'female'
+      ? 'A usuária é mulher, então foque em: K-dramas, séries românticas, reality shows, novelas e dramas emocionantes.'
+      : '';
+
+    const systemPrompt = `Você é Ashley, a assistente virtual da CineflixPayment - uma plataforma de streaming com filmes, séries, animes, futebol ao vivo e muito mais.
+
+PERSONALIDADE:
+- Seja simpática, carismática e persuasiva
+- Use emojis com moderação (1-2 por mensagem)
+- Seja natural e humana, como uma amiga ajudando
+- Fale português brasileiro informal e acolhedor
+
+OBJETIVO PRINCIPAL:
+- Você quer vender os planos da CineflixPayment
+- Sempre guie a conversa para a venda, mas de forma sutil
+- Destaque os benefícios e o valor do serviço
+
+PLANOS DISPONÍVEIS:
+- MENSAL: R$ 29,90/mês - 30 dias, 1 tela, Full HD
+- TRIMESTRAL: R$ 120,00/trimestre (ECONOMIZE 20%) - 90 dias, 2 telas, 4K, download offline
+- ANUAL VIP: R$ 300,00/ano (MELHOR OFERTA) - 365 dias, 4 telas, 4K, downloads ilimitados, acesso antecipado
+
+${genderContext}
+
+REGRAS:
+- Responda de forma curta (máximo 2-3 frases)
+- Se o usuário perguntar algo fora do contexto, redirecione gentilmente para o streaming
+- Nunca invente preços ou recursos diferentes
+- Se o usuário mostrar interesse, mencione os planos
+- Se o usuário resistir, ofereça o cupom VOLTA10 para 10% de desconto
+
+NOME DO USUÁRIO: ${userName || 'amigo(a)'}`;
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...(conversationHistory || []),
+      { role: 'user', content: userMessage }
+    ];
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages,
+        max_tokens: 200,
+        temperature: 0.8,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AI Gateway error:', response.status, errorText);
+      throw new Error(`AI Gateway error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.choices?.[0]?.message?.content || 'Desculpe, tive um probleminha. Me conta mais sobre o que você procura?';
+
+    return new Response(JSON.stringify({ response: aiResponse }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Ashley chat error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(
+      JSON.stringify({ error: errorMessage, response: 'Oi! Tive um probleminha técnico. Me conta o que você tá buscando que eu te ajudo!' }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+  }
+});
