@@ -1,16 +1,17 @@
+import cineflixLogo from '@/assets/cineflix-logo.png';
+
 const Header = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-b from-black via-black/80 to-transparent">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cinema-red to-cinema-glow flex items-center justify-center shadow-glow">
-            <span className="font-cinema text-xl text-white">C</span>
-          </div>
-          <span className="font-cinema text-2xl text-white">
-            CINEFLIX<span className="text-cinema-red">PAYMENT</span>
-          </span>
-        </div>
+        <a href="#" className="flex items-center">
+          <img 
+            src={cineflixLogo} 
+            alt="CineflixPayment" 
+            className="h-12 md:h-16 w-auto object-contain"
+          />
+        </a>
 
         {/* Nav */}
         <nav className="hidden md:flex items-center gap-8">

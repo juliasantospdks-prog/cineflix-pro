@@ -3,6 +3,7 @@ import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
 import TMDBGallery from '@/components/TMDBGallery';
 import TMDBTrailerModal from '@/components/TMDBTrailerModal';
+import PlansSection from '@/components/PlansSection';
 import ChatFAB from '@/components/ChatFAB';
 import AshleyChat from '@/components/AshleyChat';
 import { 
@@ -50,7 +51,7 @@ const Index = () => {
       <Header />
       <main>
         <HeroSection onOpenChat={() => setIsChatOpen(true)} onPlayTrailer={() => trendingMovies?.results?.[0] && handlePlayTrailer(trendingMovies.results[0])} />
-        <div className="space-y-4 pb-20">
+        <div className="space-y-4 pb-10">
           <TMDBGallery title="🔥 Em Alta" movies={trendingMovies?.results} isLoading={trendingLoading} onPlayTrailer={handlePlayTrailer} />
           <TMDBGallery title="📺 Séries Populares" movies={trendingSeries?.results} isLoading={seriesLoading} onPlayTrailer={handlePlayTrailer} />
           <TMDBGallery title="⚡ Ação" movies={actionMovies?.results} isLoading={actionLoading} onPlayTrailer={handlePlayTrailer} />
@@ -58,6 +59,7 @@ const Index = () => {
           <TMDBGallery title="💕 Romance" movies={romanceMovies?.results} isLoading={romanceLoading} onPlayTrailer={handlePlayTrailer} />
           <TMDBGallery title="🎬 Populares" movies={popularMovies?.results} isLoading={popularLoading} onPlayTrailer={handlePlayTrailer} />
         </div>
+        <PlansSection />
       </main>
       <ChatFAB onClick={() => setIsChatOpen(true)} />
       <AshleyChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
