@@ -16,22 +16,20 @@ interface AshleyChatProps {
 type ChatStep = 'greeting' | 'name' | 'gender' | 'recommendations' | 'plans' | 'upsell' | 'checkout' | 'recovery' | 'freeChat';
 type UserGender = 'male' | 'female' | null;
 
-const MALE_RECOMMENDATIONS = [
-  '🎬 **Ação e Adrenalina**: Filmes de tirar o fôlego!',
-  '⚽ **Futebol ao Vivo**: Champions, Libertadores e mais!',
-  '🦸 **Super-Heróis**: Marvel, DC e os maiores heróis!',
-  '🚗 **Velozes e Furiosos**: Toda a franquia em 4K!',
-];
+const TYPING_DELAY = 4000; // 4 seconds typing indicator
+const MESSAGE_INTERVAL = 15000; // 15 seconds between messages
 
-const FEMALE_RECOMMENDATIONS = [
-  '🌸 **K-Dramas**: Os doramas mais assistidos!',
-  '💕 **Séries Romance**: Histórias de amor emocionantes!',
-  '👑 **Reality Shows**: BBB, casamentos e mais!',
-  '✨ **Novelas Turkas**: As novelas que todo mundo ama!',
-];
-
-const TYPING_DELAY = 3000; // 3 seconds typing indicator
-const MESSAGE_INTERVAL = 5000; // 5 seconds between auto messages
+// Function to clean AI response from Markdown formatting
+const cleanAIResponse = (text: string): string => {
+  return text
+    .replace(/\*\*/g, '')           // Remove **negrito**
+    .replace(/\*/g, '')             // Remove *italico*
+    .replace(/^[-•●▪]\s*/gm, '')    // Remove marcadores de lista
+    .replace(/^\d+\.\s+/gm, '')     // Remove listas numeradas
+    .replace(/#{1,6}\s/g, '')       // Remove cabeçalhos Markdown
+    .replace(/`{1,3}/g, '')         // Remove code blocks
+    .trim();
+};
 
 const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -127,7 +125,9 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
       await new Promise(resolve => setTimeout(resolve, TYPING_DELAY));
       
       setIsTyping(false);
-      const response = data?.response || 'Me conta mais sobre o que você procura!';
+      // Clean the AI response from any Markdown formatting
+      const rawResponse = data?.response || 'Me conta mais sobre o que você procura!';
+      const response = cleanAIResponse(rawResponse);
       
       const newMessage: ChatMessage = {
         id: Date.now().toString(),
@@ -246,20 +246,22 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
 
   const showGenderRecommendations = async (gender: 'male' | 'female') => {
     setStep('recommendations');
-    const recommendations = gender === 'male' ? MALE_RECOMMENDATIONS : FEMALE_RECOMMENDATIONS;
-    const intro = gender === 'male' 
-      ? `Show, ${userName}! 💪 Olha o catálogo que eu separei pra você:`
-      : `Perfeito, ${userName}! 💖 Preparei o conteúdo ideal pra você:`;
     
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const intro = gender === 'male' 
+      ? `Show, ${userName}! Olha o catálogo que eu separei pra você 🔥`
+      : `Perfeito, ${userName}! Preparei o conteúdo ideal pra você 💖`;
+    
+    await new Promise(resolve => setTimeout(resolve, TYPING_DELAY));
     addBotMessage(intro);
     
     await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
-    const recMessage = `<div class="space-y-2 text-sm">${recommendations.map(rec => `<div>${rec}</div>`).join('')}</div>`;
-    addBotMessage(recMessage);
+    const recs = gender === 'male' 
+      ? `Temos filmes de ação, futebol ao vivo com Champions e Libertadores, super-heróis da Marvel e DC, e toda a saga Velozes e Furiosos em 4K! 🎬`
+      : `Temos os K-Dramas mais assistidos, séries românticas, reality shows como BBB, e as novelas turcas que todo mundo ama! 💕`;
+    addBotMessage(recs);
     
     await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
-    addBotMessage('E tem muito mais! 🔥 Escolha seu plano abaixo pra desbloquear tudo:');
+    addBotMessage('E tem muito mais! Escolha seu plano abaixo pra desbloquear tudo 👇');
     setStep('plans');
   };
 
