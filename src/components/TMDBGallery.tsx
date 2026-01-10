@@ -24,7 +24,7 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
   if (isLoading) {
     return (
       <section className="py-8">
-        <h2 className="text-2xl font-bold mb-6 px-8">{title}</h2>
+        <h2 className="text-2xl font-bold mb-6 px-4 md:px-8">{title}</h2>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-cinema-red" />
         </div>
@@ -38,7 +38,7 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
 
   return (
     <section className="py-8 relative group/gallery">
-      <div className="flex items-center justify-between mb-6 px-8">
+      <div className="flex items-center justify-between mb-6 px-4 md:px-8">
         <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
           {title}
         </h2>
@@ -64,11 +64,11 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
 
       <div
         ref={scrollRef}
-        className="flex gap-4 overflow-x-auto scrollbar-hide px-8 pb-4"
+        className="flex gap-4 overflow-x-auto scrollbar-hide px-4 md:px-8 pb-4"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {movies.map((movie) => (
-          <div key={movie.id} className="flex-shrink-0 w-[200px]">
+          <div key={movie.id} className="flex-shrink-0 w-[180px] md:w-[200px]">
             <TMDBMovieCard movie={movie} onPlayTrailer={onPlayTrailer} />
           </div>
         ))}

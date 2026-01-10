@@ -34,12 +34,12 @@ const HeroSection = ({ featuredMovie, onOpenChat, onPlayTrailer }: HeroSectionPr
           </div>
 
           {/* Title */}
-          <h1 className="font-cinema text-8xl text-white mb-4 leading-none glow-text">
+          <h1 className="font-cinema text-5xl md:text-7xl lg:text-8xl text-white mb-4 leading-none glow-text">
             CINEFLIX<span className="text-cinema-red">PAYMENT</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-xl text-muted-foreground mb-6 leading-relaxed">
+          <p className="text-lg md:text-xl text-muted-foreground mb-6 leading-relaxed">
             O melhor streaming do Brasil. Filmes e séries exclusivos, 
             qualidade cinematográfica e preços imbatíveis.
           </p>
