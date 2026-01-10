@@ -8,7 +8,7 @@ const ChatFAB = ({ onClick }: ChatFABProps) => {
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-6 right-6 z-[100] w-16 h-16 rounded-full bg-gradient-to-r from-cinema-red to-cinema-glow flex items-center justify-center shadow-button animate-pulse-glow hover:scale-110 transition-transform duration-300 group"
+      className="fixed bottom-6 right-6 z-40 w-16 h-16 rounded-full bg-gradient-to-r from-cinema-red to-cinema-glow flex items-center justify-center shadow-button animate-pulse-glow hover:scale-110 transition-transform duration-300 group"
       aria-label="Abrir chat"
     >
       <img 
