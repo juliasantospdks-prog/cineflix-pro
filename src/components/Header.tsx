@@ -9,15 +9,15 @@ const Header = () => {
           <img 
             src={cineflixLogo} 
             alt="CineflixPayment" 
-            className="h-10 md:h-14 w-auto object-contain"
+            className="h-14 w-auto object-contain"
           />
-          <span className="font-cinema text-xl md:text-2xl text-white hidden sm:block">
+          <span className="font-cinema text-2xl text-white">
             CINEFLIX<span className="text-cinema-red">PAYMENT</span>
           </span>
         </a>
 
         {/* Nav */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="flex items-center gap-8">
           <a href="#" className="text-white/80 hover:text-white transition-colors font-medium">Início</a>
           <a href="#filmes" className="text-white/80 hover:text-white transition-colors font-medium">Filmes</a>
           <a href="#series" className="text-white/80 hover:text-white transition-colors font-medium">Séries</a>

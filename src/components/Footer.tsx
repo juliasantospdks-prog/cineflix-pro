@@ -9,9 +9,9 @@ const Footer = () => {
     <footer className="bg-cinema-dark border-t border-white/10">
       {/* Main footer */}
       <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-4 gap-8">
           {/* Brand */}
-          <div className="md:col-span-1">
+          <div className="col-span-1">
             <div className="flex items-center gap-3 mb-4">
               <img src={cineflixLogo} alt="CineflixPayment" className="w-12 h-12 object-contain" />
               <span className="text-xl font-bold text-white">CINEFLIXPAYMENT</span>
@@ -99,8 +99,8 @@ const Footer = () => {
 
       {/* Bottom bar */}
       <div className="border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-white/40 text-sm text-center md:text-left">
+        <div className="max-w-7xl mx-auto px-4 py-6 flex flex-row items-center justify-between gap-4">
+          <p className="text-white/40 text-sm text-left">
             © {currentYear} CineflixPayment. Todos os direitos reservados.
           </p>
           <div className="flex items-center gap-4">
