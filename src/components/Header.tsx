@@ -5,13 +5,13 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-b from-black via-black/80 to-transparent">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         {/* Logo */}
-        <a href="#" className="flex items-center gap-3">
+        <a href="#" className="flex items-center gap-2 md:gap-3">
           <img 
             src={cineflixLogo} 
             alt="CineflixPayment" 
-            className="h-10 md:h-14 w-auto object-contain"
+            className="h-8 md:h-14 w-auto object-contain"
           />
-          <span className="font-cinema text-xl md:text-2xl text-white hidden sm:block">
+          <span className="font-cinema text-sm sm:text-xl md:text-2xl text-white">
             CINEFLIX<span className="text-cinema-red">PAYMENT</span>
           </span>
         </a>
