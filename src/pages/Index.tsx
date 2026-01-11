@@ -19,8 +19,19 @@ import {
 
 const Index = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>(undefined);
   const [selectedMovie, setSelectedMovie] = useState<TMDBMovie | null>(null);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+
+  const openChatWithMessage = (message?: string) => {
+    setChatInitialMessage(message);
+    setIsChatOpen(true);
+  };
+
+  const handleCloseChat = () => {
+    setIsChatOpen(false);
+    setChatInitialMessage(undefined);
+  };
 
   const { data: trendingMovies, isLoading: trendingLoading } = useTrendingMovies();
   const { data: trendingSeries, isLoading: seriesLoading } = useTrendingSeries();
@@ -51,7 +62,7 @@ const Index = () => {
     <div className="min-h-screen bg-cinema-dark text-white">
       <Header />
       <main>
-        <HeroSection onOpenChat={() => setIsChatOpen(true)} onPlayTrailer={() => trendingMovies?.results?.[0] && handlePlayTrailer(trendingMovies.results[0])} />
+        <HeroSection onOpenChat={() => openChatWithMessage()} onPlayTrailer={() => trendingMovies?.results?.[0] && handlePlayTrailer(trendingMovies.results[0])} />
         <div className="space-y-4 pb-10">
           <TMDBGallery title="🔥 Em Alta" movies={trendingMovies?.results} isLoading={trendingLoading} onPlayTrailer={handlePlayTrailer} />
           <TMDBGallery title="📺 Séries Populares" movies={trendingSeries?.results} isLoading={seriesLoading} onPlayTrailer={handlePlayTrailer} />
@@ -60,11 +71,11 @@ const Index = () => {
           <TMDBGallery title="💕 Romance" movies={romanceMovies?.results} isLoading={romanceLoading} onPlayTrailer={handlePlayTrailer} />
           <TMDBGallery title="🎬 Populares" movies={popularMovies?.results} isLoading={popularLoading} onPlayTrailer={handlePlayTrailer} />
         </div>
-        <PlansSection />
+        <PlansSection onOpenChatWithPlan={openChatWithMessage} />
       </main>
       <Footer />
-      <ChatFAB onClick={() => setIsChatOpen(true)} />
-      <AshleyChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      <ChatFAB onClick={() => openChatWithMessage()} />
+      <AshleyChat isOpen={isChatOpen} onClose={handleCloseChat} initialMessage={chatInitialMessage} />
       <TMDBTrailerModal movie={selectedMovie} isOpen={isTrailerOpen} onClose={() => { setIsTrailerOpen(false); setSelectedMovie(null); }} />
     </div>
   );
