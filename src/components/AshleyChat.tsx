@@ -11,6 +11,7 @@ import cineflixLogo from '@/assets/cineflix-logo.png';
 interface AshleyChatProps {
   isOpen: boolean;
   onClose: () => void;
+  initialMessage?: string;
 }
 
 type ChatStep = 'greeting' | 'name' | 'gender' | 'recommendations' | 'plans' | 'upsell' | 'checkout' | 'recovery' | 'freeChat';
@@ -31,7 +32,7 @@ const cleanAIResponse = (text: string): string => {
     .trim();
 };
 
-const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
+const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -152,18 +153,29 @@ const AshleyChat = ({ isOpen, onClose }: AshleyChatProps) => {
     if (isOpen && messages.length === 0) {
       const startSequence = async () => {
         await new Promise(resolve => setTimeout(resolve, 1000));
-        addBotMessage('Olá! Sou Ashley da CineflixPayment! 👋');
         
-        await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
-        addBotMessage('Vou te ajudar a escolher o melhor plano pra você! 🎬');
-        
-        await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
-        addBotMessage('Qual é o seu nome? 😊');
-        setStep('name');
+        // If there's an initial message (from plan selection), show it first
+        if (initialMessage) {
+          addBotMessage(initialMessage);
+          
+          await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
+          addBotMessage('Sou Ashley da CineflixPayment! 👋 Me diz seu nome pra eu te ajudar melhor?');
+          setStep('name');
+        } else {
+          // Normal greeting flow
+          addBotMessage('Olá! Sou Ashley da CineflixPayment! 👋');
+          
+          await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
+          addBotMessage('Vou te ajudar a escolher o melhor plano pra você! 🎬');
+          
+          await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
+          addBotMessage('Qual é o seu nome? 😊');
+          setStep('name');
+        }
       };
       startSequence();
     }
-  }, [isOpen, messages.length, addBotMessage]);
+  }, [isOpen, messages.length, addBotMessage, initialMessage]);
 
   const isValidName = (text: string): boolean => {
     const t = text.trim();
