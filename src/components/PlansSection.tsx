@@ -113,6 +113,10 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
 
                 {/* CTA Button */}
                 <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelectPlan(plan);
+                  }}
                   className={cn(
                     "w-full py-4 rounded-xl font-bold transition-all duration-300",
                     plan.featured
