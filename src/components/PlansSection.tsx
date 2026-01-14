@@ -223,23 +223,13 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
             {plans.map((plan) => (
               <div
                 key={plan.id}
-                className={cn(
-                  "relative rounded-2xl border transition-all duration-500 hover:scale-105 cursor-pointer",
-                  plan.featured
-                    ? "bg-gradient-to-b from-cinema-red/20 to-cinema-dark border-cinema-red shadow-glow"
-                    : "bg-cinema-panel border-white/10 hover:border-cinema-red/50"
-                )}
+                className="relative rounded-2xl border transition-all duration-500 hover:scale-105 cursor-pointer bg-gradient-to-b from-cinema-red/20 to-cinema-dark border-cinema-red shadow-glow"
                 onClick={() => handleSelectPlan(plan)}
               >
                 {/* Featured badge */}
                 {plan.discount && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className={cn(
-                      "px-4 py-1.5 rounded-full text-xs font-bold",
-                      plan.featured 
-                        ? "bg-cinema-red text-white" 
-                        : "bg-cinema-gold text-black"
-                    )}>
+                    <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-cinema-red text-white">
                       {plan.discount}
                     </span>
                   </div>
@@ -248,12 +238,7 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
                 <div className="p-8">
                   {/* Icon and name */}
                   <div className="flex flex-col items-center mb-6">
-                    <div className={cn(
-                      "w-20 h-20 rounded-2xl flex items-center justify-center mb-4 overflow-hidden",
-                      plan.featured 
-                        ? "bg-cinema-red/20" 
-                        : "bg-white/5"
-                    )}>
+                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4 overflow-hidden bg-cinema-red/20">
                       <img 
                         src={getIcon(plan.id)} 
                         alt={plan.name} 
@@ -293,12 +278,7 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
                       e.stopPropagation();
                       handleSelectPlan(plan);
                     }}
-                    className={cn(
-                      "w-full py-4 rounded-xl font-bold transition-all duration-300",
-                      plan.featured
-                        ? "bg-cinema-red hover:bg-cinema-glow text-white shadow-glow hover:shadow-glow-lg"
-                        : "bg-white/10 hover:bg-cinema-red text-white"
-                    )}
+                    className="w-full py-4 rounded-xl font-bold transition-all duration-300 bg-cinema-red hover:bg-cinema-glow text-white shadow-glow hover:shadow-glow-lg"
                   >
                     Assinar Agora
                   </button>

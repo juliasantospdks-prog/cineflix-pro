@@ -92,7 +92,7 @@ export const plans: Plan[] = [
   {
     id: 'trimestral',
     name: 'PLANO TRIMESTRAL',
-    price: 120.00,
+    price: 75.90,
     period: '/trimestre',
     icon: '💎',
     featured: true,
