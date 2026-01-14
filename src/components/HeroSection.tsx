@@ -45,7 +45,7 @@ const HeroSection = ({ featuredMovie, onOpenChat, onPlayTrailer }: HeroSectionPr
           </p>
 
           {/* Stats */}
-          <div className="flex items-center gap-6 mb-8">
+          <div className="flex items-center gap-6 mb-4">
             <div className="flex items-center gap-2">
               <Star className="w-5 h-5 fill-cinema-gold text-cinema-gold" />
               <span className="text-cinema-gold font-bold">9.8</span>
@@ -58,6 +58,11 @@ const HeroSection = ({ featuredMovie, onOpenChat, onPlayTrailer }: HeroSectionPr
               <span className="text-white font-bold">4K</span> Ultra HD
             </div>
           </div>
+
+          {/* Second Subtitle */}
+          <p className="text-base md:text-lg text-muted-foreground mb-8 leading-relaxed">
+            Seja bem-vindo à plataforma mais atualizada de 2026 <span className="text-cinema-red font-bold">CINEFLIXPAYMENT</span> Filmes & Séries & muito + abaixo segue o catálogo dos filmes
+          </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-wrap gap-4">
