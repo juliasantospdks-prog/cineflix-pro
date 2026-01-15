@@ -3,9 +3,9 @@ import { Check, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { plans, upsells, WHATSAPP_NUMBER, KIRVANO_LINKS } from '@/data/cineflix';
 import { cn } from '@/lib/utils';
 import { Plan, Upsell } from '@/types';
-import planMensalIcon from '@/assets/plan-mensal-icon.png';
-import planTrimestralIcon from '@/assets/plan-trimestral-icon.png';
-import planAnualIcon from '@/assets/plan-anual-icon.png';
+import planMensalIcon from '@/assets/plan-mensal-new.png';
+import planTrimestralIcon from '@/assets/plan-trimestral-new.png';
+import planAnualIcon from '@/assets/plan-anual-new.png';
 
 interface PlansSectionProps {
   onOpenChatWithPlan?: (message?: string) => void;
