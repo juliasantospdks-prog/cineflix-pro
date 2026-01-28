@@ -1,5 +1,6 @@
 import { Mail, Phone, Instagram, Youtube, MessageCircle } from 'lucide-react';
 import cineflixLogo from '@/assets/cineflix-logo.png';
+import avatarMain from '@/assets/avatar-main.jpg';
 import { WHATSAPP_NUMBER } from '@/data/cineflix';
 
 const Footer = () => {
@@ -13,7 +14,18 @@ const Footer = () => {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <img src={cineflixLogo} alt="CineflixPayment" className="w-12 h-12 object-contain" />
+              <div className="relative">
+                <img 
+                  src={avatarMain} 
+                  alt="Avatar CineflixPayment" 
+                  className="w-12 h-12 rounded-full object-cover border-2 border-cinema-red"
+                />
+                <img 
+                  src={cineflixLogo} 
+                  alt="CineflixPayment" 
+                  className="absolute -bottom-1 -right-1 h-5 w-5 object-contain bg-cinema-dark rounded-full p-0.5"
+                />
+              </div>
               <span className="text-xl font-bold text-white">CINEFLIXPAYMENT</span>
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
