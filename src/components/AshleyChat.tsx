@@ -7,6 +7,7 @@ import { plans, upsells, WHATSAPP_NUMBER, KIRVANO_LINKS } from '@/data/cineflix'
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import cineflixLogo from '@/assets/cineflix-logo.png';
+import avatarMain from '@/assets/avatar-main.jpg';
 
 interface AshleyChatProps {
   isOpen: boolean;
@@ -349,8 +350,17 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-cinema-red to-cinema-glow p-4 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center overflow-hidden">
-            <img src={cineflixLogo} alt="CineflixPayment" className="w-10 h-10 object-contain" />
+          <div className="relative w-12 h-12">
+            <img 
+              src={avatarMain} 
+              alt="Avatar CineflixPayment" 
+              className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
+            />
+            <img 
+              src={cineflixLogo} 
+              alt="CineflixPayment" 
+              className="absolute -bottom-1 -right-1 h-5 w-5 object-contain bg-cinema-dark rounded-full p-0.5"
+            />
           </div>
           <div className="flex-1">
             <h3 className="font-bold text-white">CineflixPayment</h3>

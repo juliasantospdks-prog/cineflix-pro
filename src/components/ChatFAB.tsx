@@ -1,4 +1,4 @@
-import cineflixLogo from '@/assets/cineflix-logo.png';
+import avatarMain from '@/assets/avatar-main.jpg';
 
 interface ChatFABProps {
   onClick: () => void;
@@ -8,13 +8,13 @@ const ChatFAB = ({ onClick }: ChatFABProps) => {
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-6 right-6 z-40 w-16 h-16 rounded-full bg-gradient-to-r from-cinema-red to-cinema-glow flex items-center justify-center shadow-button animate-pulse-glow hover:scale-110 transition-transform duration-300 group"
+      className="fixed bottom-6 right-6 z-40 w-16 h-16 rounded-full bg-gradient-to-r from-cinema-red to-cinema-glow flex items-center justify-center shadow-button animate-pulse-glow hover:scale-110 transition-transform duration-300 group overflow-hidden"
       aria-label="Abrir chat"
     >
       <img 
-        src={cineflixLogo} 
+        src={avatarMain} 
         alt="CineflixPayment" 
-        className="w-10 h-10 object-contain group-hover:scale-110 transition-transform"
+        className="w-14 h-14 rounded-full object-cover group-hover:scale-110 transition-transform"
       />
       
       {/* Notification badge */}
