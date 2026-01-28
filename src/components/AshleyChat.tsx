@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, X, Check } from 'lucide-react';
+import { Send, X, Check, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChatMessage, Plan, Upsell } from '@/types';
@@ -33,6 +33,32 @@ const cleanAIResponse = (text: string): string => {
     .trim();
 };
 
+// Text-to-Speech using Web Speech API (native browser, no external dependencies)
+const speakText = (text: string, gender: 'male' | 'female' | null): void => {
+  if (!('speechSynthesis' in window)) {
+    console.log('Speech synthesis not supported');
+    return;
+  }
+  
+  // Cancel any ongoing speech
+  window.speechSynthesis.cancel();
+  
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'pt-BR';
+  utterance.rate = 0.95;
+  utterance.pitch = gender === 'female' ? 1.2 : 0.9;
+  utterance.volume = 1;
+  
+  // Try to get a Portuguese voice
+  const voices = window.speechSynthesis.getVoices();
+  const ptVoice = voices.find(v => v.lang.startsWith('pt')) || voices[0];
+  if (ptVoice) {
+    utterance.voice = ptVoice;
+  }
+  
+  window.speechSynthesis.speak(utterance);
+};
+
 const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -43,6 +69,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
   const [conversationHistory, setConversationHistory] = useState<Array<{role: string; content: string}>>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageQueueRef = useRef<string[]>([]);
@@ -273,8 +300,23 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       : `Temos os K-Dramas mais assistidos, séries românticas, reality shows como BBB, e as novelas turcas que todo mundo ama! 💕`;
     addBotMessage(recs);
     
+    // Persuasive audio message after gender detection
     await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
-    addBotMessage('E tem muito mais! Escolha seu plano abaixo pra desbloquear tudo 👇');
+    
+    const audioMessage = gender === 'male'
+      ? `${userName}, imagina pagar uma assinatura todo mês, ou todo ano, sendo que com nosso APP você paga apenas uma vez, quarenta e nove reais e noventa centavos, e tem acesso vitalício! Todos os filmes de ação, futebol ao vivo, super-heróis, tudo em 4K! Sem login, pagou, recebeu o app. Simples assim!`
+      : `${userName}, imagina pagar uma assinatura recorrente todo mês, ou ano, sendo que com nosso APP você paga apenas uma vez, quarenta e nove reais e noventa centavos, e tem acesso vitalício! Todos os K-Dramas, séries românticas, novelas, tudo! Sem senha, sem login, pagou, recebeu o app. Simples assim!`;
+    
+    const textMessage = `🎧 Escuta isso, ${userName}! Imagina pagar assinatura todo mês sendo que nosso APP custa só R$ 49,90 ÚNICO e você tem acesso VITALÍCIO! Sem login, pagou, recebeu. Simples assim! 🚀`;
+    addBotMessage(textMessage);
+    
+    // Play audio
+    if (audioEnabled) {
+      speakText(audioMessage, 'female');
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, MESSAGE_INTERVAL));
+    addBotMessage('Confira os planos abaixo. O APP VITALÍCIO é a melhor oferta! 👇');
     setStep('plans');
   };
 
@@ -369,6 +411,16 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
             </p>
           </div>
+          <button
+            onClick={() => setAudioEnabled(!audioEnabled)}
+            className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
+              audioEnabled ? "bg-green-500/30 hover:bg-green-500/40" : "bg-white/10 hover:bg-white/20"
+            )}
+            title={audioEnabled ? "Áudio ativado" : "Áudio desativado"}
+          >
+            <Volume2 className={cn("w-4 h-4", audioEnabled ? "text-green-400" : "text-white/50")} />
+          </button>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
