@@ -77,48 +77,20 @@ export const movies: Movie[] = [
 
 export const plans: Plan[] = [
   {
-    id: 'mensal',
-    name: 'PLANO MENSAL',
-    price: 29.90,
-    period: '/mês',
-    icon: '📱',
-    features: [
-      '30 dias de acesso completo',
-      'Todos os filmes e séries',
-      '1 tela simultânea',
-      'Qualidade Full HD',
-    ],
-  },
-  {
-    id: 'trimestral',
-    name: 'PLANO TRIMESTRAL',
-    price: 75.90,
-    period: '/trimestre',
-    icon: '💎',
+    id: 'vitalicio',
+    name: 'APP VITALÍCIO',
+    price: 49.90,
+    period: 'único',
+    icon: '🤖',
     featured: true,
-    discount: 'ECONOMIZE 20%',
+    discount: 'ACESSO VITALÍCIO',
     features: [
-      '90 dias de acesso completo',
+      'Acesso vitalício ao app',
       'Todos os filmes e séries',
-      '2 telas simultâneas',
-      'Qualidade 4K Ultra HD',
-      'Download offline',
-    ],
-  },
-  {
-    id: 'anual',
-    name: 'PLANO ANUAL VIP',
-    price: 300.00,
-    period: '/ano',
-    icon: '👑',
-    discount: 'MELHOR OFERTA',
-    features: [
-      '365 dias de acesso completo',
-      'Todos os filmes e séries',
-      '4 telas simultâneas',
+      'Atualizações constantes',
       'Qualidade 4K Ultra HD',
       'Download offline ilimitado',
-      'Acesso antecipado a lançamentos',
+      'Somente para Android',
     ],
   },
 ];
@@ -147,7 +119,5 @@ export const upsells: Upsell[] = [
 export const WHATSAPP_NUMBER = '5598981465166';
 
 export const KIRVANO_LINKS: Record<string, string> = {
-  mensal: 'https://pay.kirvano.com/90f879cc-111a-49df-aefe-6ec83ffcac37',
-  trimestral: 'https://pay.kirvano.com/96b90dc1-dd98-49c9-9524-1ed68f2aaa2d',
-  anual: 'https://pay.kirvano.com/5d43cc3c-301c-43ea-8cb5-6021eae434e9',
+  vitalicio: 'https://pay.kirvano.com/90f879cc-111a-49df-aefe-6ec83ffcac37',
 };
