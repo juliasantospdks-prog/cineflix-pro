@@ -11,7 +11,7 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
-import HumanGate from "./components/HumanGate";
+import BackgroundMusic from "./components/BackgroundMusic";
 import Admin from "./pages/Admin";
 import SaleReceipt from "./pages/SaleReceipt";
 import CompanyReceipt from "./pages/CompanyReceipt";
@@ -28,8 +28,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <RouteTracker />
-          <HumanGate>
-            <Routes>
+          <BackgroundMusic />
+          <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/comprovante" element={<CheckoutReceipt />} />
@@ -43,7 +43,6 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </HumanGate>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
