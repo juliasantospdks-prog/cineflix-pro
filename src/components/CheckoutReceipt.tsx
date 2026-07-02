@@ -2,12 +2,24 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2, Clock, CreditCard, MessageCircle, ArrowLeft,
-  ShieldCheck, Ticket, Film, Lock, Headphones, Sparkles, Star, Calendar, Download,
+  ShieldCheck, Ticket, Film, Lock, Headphones, Sparkles, Star, Calendar, Download, X,
 } from 'lucide-react';
-import { plans, upsells, KIRVANO_LINKS, WHATSAPP_NUMBER } from '@/data/cineflix';
+import { plans, upsells, WHATSAPP_NUMBER } from '@/data/cineflix';
 import cineflixLogo from '@/assets/cineflix-logo.png';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+
+// Heurística simples de gênero pelo primeiro nome (PT-BR)
+const detectGender = (fullName: string): 'male' | 'female' => {
+  const first = (fullName || '').trim().split(/\s+/)[0]?.toLowerCase() || '';
+  const maleExceptions = ['luca', 'costa', 'sasha', 'jose', 'josé', 'andre', 'andré', 'igor', 'thomas', 'lucas', 'jonas', 'silas', 'elias', 'tobias', 'matias', 'nicolas', 'nicholas', 'douglas'];
+  const femaleExceptions = ['tais', 'taís', 'ines', 'inês', 'beatris', 'beatriz', 'isis', 'íris', 'iris', 'carmen', 'miriam', 'raquel', 'isabel', 'ester', 'esther', 'agnes'];
+  if (femaleExceptions.includes(first)) return 'female';
+  if (maleExceptions.includes(first)) return 'male';
+  const last = first.slice(-1);
+  if (last === 'a') return 'female';
+  return 'male';
+};
 
 const CheckoutReceipt = () => {
   const [searchParams] = useSearchParams();
