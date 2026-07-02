@@ -28,8 +28,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <RouteTracker />
-          <HumanGate>
-            <Routes>
+          <BackgroundMusic />
+          <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/comprovante" element={<CheckoutReceipt />} />
@@ -43,7 +43,6 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </HumanGate>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
