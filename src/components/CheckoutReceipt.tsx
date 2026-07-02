@@ -2,12 +2,24 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2, Clock, CreditCard, MessageCircle, ArrowLeft,
-  ShieldCheck, Ticket, Film, Lock, Headphones, Sparkles, Star, Calendar, Download,
+  ShieldCheck, Ticket, Film, Lock, Headphones, Sparkles, Star, Calendar, Download, X,
 } from 'lucide-react';
-import { plans, upsells, KIRVANO_LINKS, WHATSAPP_NUMBER } from '@/data/cineflix';
+import { plans, upsells, WHATSAPP_NUMBER } from '@/data/cineflix';
 import cineflixLogo from '@/assets/cineflix-logo.png';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+
+// Heurística simples de gênero pelo primeiro nome (PT-BR)
+const detectGender = (fullName: string): 'male' | 'female' => {
+  const first = (fullName || '').trim().split(/\s+/)[0]?.toLowerCase() || '';
+  const maleExceptions = ['luca', 'costa', 'sasha', 'jose', 'josé', 'andre', 'andré', 'igor', 'thomas', 'lucas', 'jonas', 'silas', 'elias', 'tobias', 'matias', 'nicolas', 'nicholas', 'douglas'];
+  const femaleExceptions = ['tais', 'taís', 'ines', 'inês', 'beatris', 'beatriz', 'isis', 'íris', 'iris', 'carmen', 'miriam', 'raquel', 'isabel', 'ester', 'esther', 'agnes'];
+  if (femaleExceptions.includes(first)) return 'female';
+  if (maleExceptions.includes(first)) return 'male';
+  const last = first.slice(-1);
+  if (last === 'a') return 'female';
+  return 'male';
+};
 
 const CheckoutReceipt = () => {
   const [searchParams] = useSearchParams();
@@ -68,9 +80,18 @@ const CheckoutReceipt = () => {
     ].filter(Boolean).join('\n');
   };
 
-  const handlePayCard = () => window.open(KIRVANO_LINKS[plan.id], '_blank');
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const gender = detectGender(nome);
+  const querido = gender === 'female' ? 'MINHA QUERIDA' : 'MEU QUERIDO';
+  const conhecer = gender === 'female' ? 'minha nova cliente' : 'meu novo cliente';
+
+  const handlePayCard = () => setShowFinalizeModal(true);
   const handlePayWhats = () => {
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildWhatsMessage())}`, '_blank');
+  };
+  const handleGoToWhats = () => {
+    setShowFinalizeModal(false);
+    handlePayWhats();
   };
 
   const handleDownloadPDF = async () => {
@@ -384,6 +405,87 @@ const CheckoutReceipt = () => {
           </button>
         </div>
       </div>
+
+      {/* MODAL: Calma, meu querido / minha querida */}
+      {showFinalizeModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={() => setShowFinalizeModal(false)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-3xl overflow-hidden bg-black border border-red-600/50 shadow-2xl"
+            style={{ boxShadow: '0 0 60px rgba(220,38,38,0.4)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Faixa cinema topo */}
+            <div className="h-4 bg-black flex items-center justify-around px-2 border-b border-red-600/40">
+              {Array.from({ length: 14 }).map((_, i) => (
+                <div key={i} className="w-2 h-2 rounded-sm bg-red-600/50" />
+              ))}
+            </div>
+
+            {/* Header vermelho */}
+            <div className="relative px-6 py-7 text-center overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-700 via-red-900 to-black" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.25),transparent_60%)]" />
+              <button
+                onClick={() => setShowFinalizeModal(false)}
+                className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 flex items-center justify-center text-white/80 hover:text-white transition-colors"
+                aria-label="Fechar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/60 border border-white/30 mb-3 backdrop-blur-sm">
+                  <Ticket className="w-3.5 h-3.5 text-white" />
+                  <span className="text-white text-[10px] font-bold tracking-[0.3em]">CINEFLIXPAYMENT</span>
+                </div>
+                <h2 className="font-cinema text-white text-2xl font-bold tracking-wide">
+                  CALMA, {querido}!
+                </h2>
+              </div>
+            </div>
+
+            {/* Corpo */}
+            <div className="px-6 py-6 space-y-4 text-white/85 text-sm leading-relaxed">
+              <p>
+                Gostaria de conhecer {conhecer}. Eu prezo muito em ter uma{' '}
+                <span className="text-red-500 font-semibold">boa relação com meus clientes</span> — por isso jamais vou receber algo seu sem antes conversar com você.
+              </p>
+              <p>
+                Você pode até encontrar algo mais barato, mas <span className="text-red-500 font-semibold">não presta</span>. O que estou te oferecendo não é um plano qualquer e nem uma assinatura comum — é uma <span className="text-red-500 font-semibold">experiência única</span>.
+              </p>
+              <p>
+                Por isso preciso que você me chame agora no WhatsApp, para que eu possa te receber da melhor forma possível.
+              </p>
+              <p className="italic text-white/70">Um xeiro.</p>
+
+              <div className="border-t border-dashed border-red-600/30 pt-4 space-y-3">
+                <button
+                  onClick={handleGoToWhats}
+                  className="w-full py-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-600/50 transition-all duration-300 hover:scale-[1.02]"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  FALAR COM A CINEFLIXPAYMENT
+                </button>
+                <button
+                  onClick={() => setShowFinalizeModal(false)}
+                  className="w-full py-3 rounded-xl bg-transparent border border-white/20 hover:border-white/40 text-white/80 font-semibold text-sm transition-all"
+                >
+                  AGORA NÃO
+                </button>
+              </div>
+            </div>
+
+            {/* Faixa cinema base */}
+            <div className="h-4 bg-black flex items-center justify-around px-2 border-t border-red-600/40">
+              {Array.from({ length: 14 }).map((_, i) => (
+                <div key={i} className="w-2 h-2 rounded-sm bg-red-600/50" />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
