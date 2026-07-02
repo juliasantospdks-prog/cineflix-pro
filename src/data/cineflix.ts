@@ -146,24 +146,6 @@ export const upsells: Upsell[] = [
     description: 'Conteúdo adulto exclusivo +18',
     price: 8.99,
   },
-  {
-    id: 'acesso_extra',
-    name: '+1 Acesso Extra',
-    description: 'Assista em 2 telas simultâneas',
-    price: 9.90,
-  },
-  {
-    id: 'adultos_herois',
-    name: 'Pacote Adultos + Heróis 2025',
-    description: 'Conteúdo exclusivo + lançamentos',
-    price: 7.90,
-  },
-  {
-    id: 'combo_completo',
-    name: 'COMBO COMPLETO',
-    description: 'Todos os adicionais juntos',
-    price: 14.90,
-  },
 ];
 
 export const WHATSAPP_NUMBER = '5598981465166';
