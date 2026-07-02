@@ -11,7 +11,7 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
-import HumanGate from "./components/HumanGate";
+import BackgroundMusic from "./components/BackgroundMusic";
 import Admin from "./pages/Admin";
 import SaleReceipt from "./pages/SaleReceipt";
 import CompanyReceipt from "./pages/CompanyReceipt";
