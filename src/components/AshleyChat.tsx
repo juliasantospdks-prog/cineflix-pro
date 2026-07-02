@@ -217,19 +217,24 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
   // Initial greeting — protected against double-run
   useEffect(() => {
-    if (!isOpen) return;
-    if (hasStartedRef.current) return;
+    if (!isOpen) {
+      hasStartedRef.current = false;
+      return;
+    }
+    if (hasStartedRef.current) {
+      // Chat já iniciado — se um novo initialMessage veio, apenas injeta
+      if (initialMessage) addBotMessage(initialMessage);
+      return;
+    }
     hasStartedRef.current = true;
 
     const startSequence = async () => {
-      await sleep(600);
+      await sleep(300);
       if (initialMessage) {
         addBotMessage(initialMessage);
         addBotMessage('Sou Ashley da CineflixPayment! 👋 Me diz seu nome pra eu te ajudar melhor?');
       } else {
-        addBotMessage('Olá! Sou Ashley da CineflixPayment! 👋');
-        addBotMessage('Vou te ajudar a escolher o melhor plano pra você 🎬');
-        addBotMessage('Qual é o seu nome? 😊');
+        addBotMessage('Olá! Sou Ashley da CineflixPayment! 👋 Qual é o seu nome?');
       }
       setStep('name');
     };
