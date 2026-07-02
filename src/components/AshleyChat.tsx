@@ -18,8 +18,8 @@ interface AshleyChatProps {
 type ChatStep = 'greeting' | 'name' | 'gender' | 'recommendations' | 'plans' | 'upsell' | 'checkout' | 'recovery' | 'freeChat';
 type UserGender = 'male' | 'female' | null;
 
-const TYPING_DELAY = 1200;
-const MESSAGE_INTERVAL = 1500;
+const TYPING_DELAY = 500;
+const MESSAGE_INTERVAL = 600;
 const MAX_INPUT_LEN = 500;
 
 // Generate a unique message id (avoids collisions on fast sequential adds)
