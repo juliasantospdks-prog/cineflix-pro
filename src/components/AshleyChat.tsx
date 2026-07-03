@@ -8,6 +8,7 @@ import { plans, upsells } from '@/data/cineflix';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import cineflixLogo from '@/assets/cineflix-logo.png';
+import ashleyAvatar from '@/assets/ashley-avatar.png.asset.json';
 
 interface AshleyChatProps {
   isOpen: boolean;
