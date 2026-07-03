@@ -18,9 +18,35 @@ interface AshleyChatProps {
 type ChatStep = 'greeting' | 'name' | 'gender' | 'recommendations' | 'plans' | 'upsell' | 'checkout' | 'recovery' | 'freeChat';
 type UserGender = 'male' | 'female' | null;
 
-const TYPING_DELAY = 500;
-const MESSAGE_INTERVAL = 600;
+const TYPING_DELAY = 8000;
+const MESSAGE_INTERVAL = 400;
 const MAX_INPUT_LEN = 500;
+
+// Descrições persuasivas de cada plano (Ashley apresenta um por vez)
+const PLAN_PITCHES: Record<string, string[]> = {
+  mensal: [
+    'Vamos começar pelo Plano Mensal 📱',
+    'Por apenas R$ 29,90 você tem 30 dias de acesso completo a TODO o catálogo — filmes, séries, animes e futebol ao vivo.',
+    'É perfeito pra quem quer testar sem compromisso, com qualidade Full HD e liberação imediata. 🎬',
+  ],
+  trimestral: [
+    'Agora deixa eu te mostrar o Plano Trimestral 💎',
+    'São 90 dias por R$ 75,90 — você ECONOMIZA 20% comparado ao mensal!',
+    'Além disso: 2 telas simultâneas, qualidade 4K Ultra HD e download offline pra assistir onde quiser. 🚀',
+  ],
+  anual: [
+    'E chegou a MELHOR OFERTA: o Plano Anual VIP 👑',
+    'Por R$ 300,00 você tem 365 dias de acesso, 4 telas simultâneas, 4K Ultra HD e downloads ILIMITADOS.',
+    'Ainda ganha acesso antecipado aos lançamentos — sai por menos de R$ 0,83 por dia. É o melhor custo-benefício! ⭐',
+  ],
+  apk: [
+    'E pra fechar: o APK Vitalício 🤖',
+    'Pagamento ÚNICO de R$ 97,90 — nunca mais paga mensalidade! Compatível com Android, sem senhas, sem travamentos e zero anúncios.',
+    'Inclui atualizações futuras e garantia de 360 dias. É o mais escolhido por quem quer paz total. 🔥',
+  ],
+};
+
+const PLAN_ORDER = ['mensal', 'trimestral', 'anual', 'apk'];
 
 // Generate a unique message id (avoids collisions on fast sequential adds)
 let __msgSeq = 0;
