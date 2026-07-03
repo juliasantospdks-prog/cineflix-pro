@@ -345,6 +345,25 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     await getAIResponse(text);
   };
 
+  const presentPlanAt = (index: number) => {
+    const planId = PLAN_ORDER[index];
+    if (!planId) return;
+    const pitch = PLAN_PITCHES[planId] || [];
+    pitch.forEach((line) => addBotMessage(line));
+    setPlanPresentIndex(index);
+  };
+
+  const handleNextPlan = () => {
+    if (isTyping || isAiLoading) return;
+    const next = planPresentIndex + 1;
+    if (next >= PLAN_ORDER.length) {
+      addBotMessage('Esses são todos os planos! Qual combina mais com você? 😊 Pode escolher qualquer um acima 👆');
+      return;
+    }
+    addUserMessage('Quero ver o próximo plano');
+    presentPlanAt(next);
+  };
+
   const showGenderRecommendations = async (gender: 'male' | 'female') => {
     setStep('recommendations');
     const intro =
@@ -358,8 +377,9 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         ? 'Temos filmes de ação, futebol ao vivo com Champions e Libertadores, super-heróis da Marvel e DC, e toda a saga Velozes e Furiosos em 4K! 🎬'
         : 'Temos os K-Dramas mais assistidos, séries românticas, reality shows como BBB, e as novelas turcas que todo mundo ama! 💕';
     addBotMessage(recs);
-    addBotMessage('E tem muito mais! Escolha seu plano abaixo pra desbloquear tudo 👇');
+    addBotMessage('Agora deixa eu te apresentar nossos planos, um por um, pra você escolher o melhor pra você 👇');
     setStep('plans');
+    presentPlanAt(0);
   };
 
   const handleSelectGender = (gender: 'male' | 'female') => {
