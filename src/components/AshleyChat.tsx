@@ -24,27 +24,15 @@ const MESSAGE_INTERVAL = 400;
 const MAX_INPUT_LEN = 500;
 
 // Descrições persuasivas de cada plano (Ashley apresenta um por vez)
-const PLAN_PITCHES: Record<string, string[]> = {
-  mensal: [
-    'Vamos começar pelo Plano Mensal 📱',
-    'Por apenas R$ 29,90 você tem 30 dias de acesso completo a TODO o catálogo — filmes, séries, animes e futebol ao vivo.',
-    'É perfeito pra quem quer testar sem compromisso, com qualidade Full HD e liberação imediata. 🎬',
-  ],
-  trimestral: [
-    'Agora deixa eu te mostrar o Plano Trimestral 💎',
-    'São 90 dias por R$ 75,90 — você ECONOMIZA 20% comparado ao mensal!',
-    'Além disso: 2 telas simultâneas, qualidade 4K Ultra HD e download offline pra assistir onde quiser. 🚀',
-  ],
-  anual: [
-    'E chegou a MELHOR OFERTA: o Plano Anual VIP 👑',
-    'Por R$ 300,00 você tem 365 dias de acesso, 4 telas simultâneas, 4K Ultra HD e downloads ILIMITADOS.',
-    'Ainda ganha acesso antecipado aos lançamentos — sai por menos de R$ 0,83 por dia. É o melhor custo-benefício! ⭐',
-  ],
-  apk: [
-    'E pra fechar: o APK Vitalício 🤖',
-    'Pagamento ÚNICO de R$ 97,90 — nunca mais paga mensalidade! Compatível com Android, sem senhas, sem travamentos e zero anúncios.',
-    'Inclui atualizações futuras e garantia de 360 dias. É o mais escolhido por quem quer paz total. 🔥',
-  ],
+const PLAN_PITCHES: Record<string, string> = {
+  mensal:
+    'Vamos começar pelo Plano Mensal 📱 Por apenas R$ 29,90 você tem 30 dias de acesso completo ao catálogo inteiro — filmes, séries, animes e futebol ao vivo, em Full HD, liberado na hora. Perfeito pra testar sem compromisso. 🎬',
+  trimestral:
+    'Agora o Plano Trimestral 💎 São 90 dias por R$ 75,90 — você ECONOMIZA 20% em relação ao mensal, ganha 2 telas simultâneas, qualidade 4K Ultra HD e download offline pra assistir onde quiser. 🚀',
+  anual:
+    'A MELHOR OFERTA: Plano Anual VIP 👑 R$ 300,00 por 365 dias, 4 telas simultâneas, 4K Ultra HD, downloads ilimitados e acesso antecipado a lançamentos. Sai por menos de R$ 0,83 por dia. ⭐',
+  apk:
+    'E pra fechar: APK Vitalício 🤖 Pagamento ÚNICO de R$ 97,90 — nunca mais paga mensalidade! Roda em Android, sem senhas, sem travamentos, zero anúncios, atualizações incluídas e garantia de 360 dias. 🔥',
 };
 
 const PLAN_ORDER = ['mensal', 'trimestral', 'anual', 'apk'];
@@ -126,6 +114,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; content: string }>>([]);
   const [planPresentIndex, setPlanPresentIndex] = useState(0);
+  const [planPitchDone, setPlanPitchDone] = useState(false);
 
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -346,23 +335,25 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     await getAIResponse(text);
   };
 
-  const presentPlanAt = (index: number) => {
+  const presentPlanAt = async (index: number) => {
     const planId = PLAN_ORDER[index];
     if (!planId) return;
-    const pitch = PLAN_PITCHES[planId] || [];
-    pitch.forEach((line) => addBotMessage(line));
     setPlanPresentIndex(index);
+    setPlanPitchDone(false);
+    addBotMessage(PLAN_PITCHES[planId]);
+    await waitForQueueIdle();
+    if (isMountedRef.current) setPlanPitchDone(true);
   };
 
-  const handleNextPlan = () => {
-    if (isTyping || isAiLoading) return;
+  const handleNextPlan = async () => {
+    if (isTyping || isAiLoading || !planPitchDone) return;
     const next = planPresentIndex + 1;
     if (next >= PLAN_ORDER.length) {
-      addBotMessage('Esses são todos os planos! Qual combina mais com você? 😊 Pode escolher qualquer um acima 👆');
+      addBotMessage('Esses são todos os planos! Qual combina mais com você? 😊 É só tocar no card acima 👆');
       return;
     }
     addUserMessage('Quero ver o próximo plano');
-    presentPlanAt(next);
+    await presentPlanAt(next);
   };
 
   const showGenderRecommendations = async (gender: 'male' | 'female') => {
@@ -378,9 +369,9 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         ? 'Temos filmes de ação, futebol ao vivo com Champions e Libertadores, super-heróis da Marvel e DC, e toda a saga Velozes e Furiosos em 4K! 🎬'
         : 'Temos os K-Dramas mais assistidos, séries românticas, reality shows como BBB, e as novelas turcas que todo mundo ama! 💕';
     addBotMessage(recs);
-    addBotMessage('Agora deixa eu te apresentar nossos planos, um por um, pra você escolher o melhor pra você 👇');
+    addBotMessage('Agora deixa eu te apresentar nossos planos, um por um, pra você escolher o que mais combina 👇');
     setStep('plans');
-    presentPlanAt(0);
+    await presentPlanAt(0);
   };
 
   const handleSelectGender = (gender: 'male' | 'female') => {
@@ -507,57 +498,56 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
             </div>
           )}
 
-          {/* Plan selection — apresentação sequencial */}
-          {step === 'plans' && !selectedPlan && !isTyping && (
-            <div className="space-y-3 animate-slide-up">
-              {PLAN_ORDER.slice(0, planPresentIndex + 1)
-                .map((id) => plans.find((p) => p.id === id))
-                .filter((p): p is Plan => !!p)
-                .map((plan) => (
-                  <div
-                    key={plan.id}
-                    className={cn('plan-card cursor-pointer relative', plan.featured && 'featured')}
-                    onClick={() => handleSelectPlan(plan)}
-                  >
-                    {plan.discount && (
-                      <span className="absolute top-2 right-2 text-xs font-bold text-cinema-red bg-cinema-red/20 px-2 py-1 rounded">
-                        {plan.discount}
-                      </span>
-                    )}
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-2xl">{plan.icon}</span>
-                      <span className="font-bold">{plan.name}</span>
-                    </div>
-                    <div className="text-2xl font-bold text-cinema-glow mb-2">
-                      R$ {plan.price.toFixed(2)}
-                      <span className="text-sm text-muted-foreground font-normal">{plan.period}</span>
-                    </div>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      {plan.features.slice(0, 3).map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                          <Check className="w-3 h-3 text-cinema-red" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                    <Button variant="cinema" size="sm" className="w-full mt-3">
-                      ✅ Escolher este plano
-                    </Button>
-                  </div>
-                ))}
-
-              {planPresentIndex < PLAN_ORDER.length - 1 && (
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full border-cinema-red/40 text-white hover:bg-cinema-red/10"
-                  onClick={handleNextPlan}
+          {/* Plan selection — um plano por vez, só depois da Ashley terminar de escrever */}
+          {step === 'plans' && !selectedPlan && !isTyping && !isAiLoading && planPitchDone && (() => {
+            const currentPlan = plans.find((p) => p.id === PLAN_ORDER[planPresentIndex]);
+            if (!currentPlan) return null;
+            const isLast = planPresentIndex >= PLAN_ORDER.length - 1;
+            return (
+              <div className="space-y-3 animate-slide-up">
+                <div
+                  className={cn('plan-card cursor-pointer relative', currentPlan.featured && 'featured')}
+                  onClick={() => handleSelectPlan(currentPlan)}
                 >
-                  Ver próximo plano →
-                </Button>
-              )}
-            </div>
-          )}
+                  {currentPlan.discount && (
+                    <span className="absolute top-2 right-2 text-xs font-bold text-cinema-red bg-cinema-red/20 px-2 py-1 rounded">
+                      {currentPlan.discount}
+                    </span>
+                  )}
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-2xl">{currentPlan.icon}</span>
+                    <span className="font-bold">{currentPlan.name}</span>
+                  </div>
+                  <div className="text-2xl font-bold text-cinema-glow mb-2">
+                    R$ {currentPlan.price.toFixed(2)}
+                    <span className="text-sm text-muted-foreground font-normal">{currentPlan.period}</span>
+                  </div>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    {currentPlan.features.slice(0, 3).map((feature, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <Check className="w-3 h-3 text-cinema-red" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button variant="cinema" size="sm" className="w-full mt-3">
+                    ✅ Escolher este plano
+                  </Button>
+                </div>
+
+                {!isLast && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full border-cinema-red/40 text-white hover:bg-cinema-red/10"
+                    onClick={() => void handleNextPlan()}
+                  >
+                    Ver próximo plano →
+                  </Button>
+                )}
+              </div>
+            );
+          })()}
 
 
           {/* Upsell selection */}

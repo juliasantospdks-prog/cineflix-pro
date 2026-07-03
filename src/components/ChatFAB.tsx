@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import cineflixLogo from '@/assets/cineflix-logo.png';
+import ashleyAvatar from '@/assets/ashley-avatar.png.asset.json';
 
 interface ChatFABProps {
   onClick: () => void;
@@ -34,19 +34,19 @@ const ChatFAB = ({ onClick }: ChatFABProps) => {
 
       <motion.button
         onClick={onClick}
-        className="w-14 h-14 rounded-full bg-gradient-to-r from-cinema-red to-cinema-glow flex items-center justify-center shadow-button group relative"
+        className="w-16 h-16 rounded-full bg-gradient-to-r from-cinema-red to-cinema-glow flex items-center justify-center shadow-button group relative overflow-hidden ring-2 ring-white/30"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         animate={{ boxShadow: ['0 0 20px hsl(357 91% 47% / 0.4)', '0 0 35px hsl(357 91% 47% / 0.6)', '0 0 20px hsl(357 91% 47% / 0.4)'] }}
         transition={{ boxShadow: { duration: 2, repeat: Infinity } }}
-        aria-label="Abrir chat"
+        aria-label="Abrir chat com Ashley"
       >
-        <img 
-          src={cineflixLogo} 
-          alt="CineflixPayment" 
-          className="w-9 h-9 object-contain group-hover:scale-110 transition-transform"
+        <img
+          src={ashleyAvatar.url}
+          alt="Ashley — Suporte CineflixPayment"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform"
         />
-        
+
         {/* Notification badge */}
         <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-cinema-red text-xs font-bold rounded-full flex items-center justify-center shadow-sm">
           1
