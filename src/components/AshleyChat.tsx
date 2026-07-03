@@ -498,57 +498,56 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
             </div>
           )}
 
-          {/* Plan selection — apresentação sequencial */}
-          {step === 'plans' && !selectedPlan && !isTyping && (
-            <div className="space-y-3 animate-slide-up">
-              {PLAN_ORDER.slice(0, planPresentIndex + 1)
-                .map((id) => plans.find((p) => p.id === id))
-                .filter((p): p is Plan => !!p)
-                .map((plan) => (
-                  <div
-                    key={plan.id}
-                    className={cn('plan-card cursor-pointer relative', plan.featured && 'featured')}
-                    onClick={() => handleSelectPlan(plan)}
-                  >
-                    {plan.discount && (
-                      <span className="absolute top-2 right-2 text-xs font-bold text-cinema-red bg-cinema-red/20 px-2 py-1 rounded">
-                        {plan.discount}
-                      </span>
-                    )}
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-2xl">{plan.icon}</span>
-                      <span className="font-bold">{plan.name}</span>
-                    </div>
-                    <div className="text-2xl font-bold text-cinema-glow mb-2">
-                      R$ {plan.price.toFixed(2)}
-                      <span className="text-sm text-muted-foreground font-normal">{plan.period}</span>
-                    </div>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      {plan.features.slice(0, 3).map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                          <Check className="w-3 h-3 text-cinema-red" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                    <Button variant="cinema" size="sm" className="w-full mt-3">
-                      ✅ Escolher este plano
-                    </Button>
-                  </div>
-                ))}
-
-              {planPresentIndex < PLAN_ORDER.length - 1 && (
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full border-cinema-red/40 text-white hover:bg-cinema-red/10"
-                  onClick={handleNextPlan}
+          {/* Plan selection — um plano por vez, só depois da Ashley terminar de escrever */}
+          {step === 'plans' && !selectedPlan && !isTyping && !isAiLoading && planPitchDone && (() => {
+            const currentPlan = plans.find((p) => p.id === PLAN_ORDER[planPresentIndex]);
+            if (!currentPlan) return null;
+            const isLast = planPresentIndex >= PLAN_ORDER.length - 1;
+            return (
+              <div className="space-y-3 animate-slide-up">
+                <div
+                  className={cn('plan-card cursor-pointer relative', currentPlan.featured && 'featured')}
+                  onClick={() => handleSelectPlan(currentPlan)}
                 >
-                  Ver próximo plano →
-                </Button>
-              )}
-            </div>
-          )}
+                  {currentPlan.discount && (
+                    <span className="absolute top-2 right-2 text-xs font-bold text-cinema-red bg-cinema-red/20 px-2 py-1 rounded">
+                      {currentPlan.discount}
+                    </span>
+                  )}
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-2xl">{currentPlan.icon}</span>
+                    <span className="font-bold">{currentPlan.name}</span>
+                  </div>
+                  <div className="text-2xl font-bold text-cinema-glow mb-2">
+                    R$ {currentPlan.price.toFixed(2)}
+                    <span className="text-sm text-muted-foreground font-normal">{currentPlan.period}</span>
+                  </div>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    {currentPlan.features.slice(0, 3).map((feature, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <Check className="w-3 h-3 text-cinema-red" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button variant="cinema" size="sm" className="w-full mt-3">
+                    ✅ Escolher este plano
+                  </Button>
+                </div>
+
+                {!isLast && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full border-cinema-red/40 text-white hover:bg-cinema-red/10"
+                    onClick={() => void handleNextPlan()}
+                  >
+                    Ver próximo plano →
+                  </Button>
+                )}
+              </div>
+            );
+          })()}
 
 
           {/* Upsell selection */}
