@@ -124,6 +124,8 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; content: string }>>([]);
+  const [planPresentIndex, setPlanPresentIndex] = useState(0);
+
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageQueueRef = useRef<string[]>([]);
