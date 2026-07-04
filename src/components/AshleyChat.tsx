@@ -512,6 +512,25 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
               )}
             >
               {msg.content}
+              {msg.sender === 'bot' && msg.audioUrl && (
+                <button
+                  onClick={() => playMessageAudio(msg.id, msg.audioUrl!)}
+                  className="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-cinema-red/20 hover:bg-cinema-red/30 border border-cinema-red/40 text-xs font-semibold text-white transition-colors"
+                  aria-label={playingAudioId === msg.id ? 'Pausar áudio da Ashley' : 'Ouvir áudio da Ashley'}
+                >
+                  {playingAudioId === msg.id ? (
+                    <>
+                      <Pause className="w-3.5 h-3.5" />
+                      Pausar áudio
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-3.5 h-3.5 fill-white" />
+                      Ouvir Ashley
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           ))}
 
