@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, X, Check } from 'lucide-react';
+import { Send, X, Check, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChatMessage, Plan } from '@/types';
@@ -9,6 +9,9 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import cineflixLogo from '@/assets/cineflix-logo.png';
 import ashleyAvatar from '@/assets/ashley-avatar.png.asset.json';
+import ashleyGreeting from '@/assets/ashley-greeting.mp3.asset.json';
+import ashleyQuerido from '@/assets/ashley-querido.mp3.asset.json';
+import ashleyQuerida from '@/assets/ashley-querida.mp3.asset.json';
 
 interface AshleyChatProps {
   isOpen: boolean;
