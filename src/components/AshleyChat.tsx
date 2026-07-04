@@ -334,9 +334,10 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       if (extractedName) {
         setUserName(extractedName);
         const guessed = guessGenderFromName(extractedName);
-        addBotMessage(`Prazer em te conhecer, ${extractedName}! 😊`);
+        const audio = guessed === 'male' ? ashleyQuerido.url : guessed === 'female' ? ashleyQuerida.url : undefined;
+        const carinho = guessed === 'male' ? 'querido' : guessed === 'female' ? 'querida' : 'meu bem';
+        addBotMessage(`Aaah, ${carinho}! Prazer em te conhecer 😊`, audio);
         if (guessed) {
-          // Pula a pergunta de gênero — Ashley já deduziu pelo nome
           setUserGender(guessed);
           await showGenderRecommendations(guessed);
         } else {
