@@ -123,8 +123,6 @@ const Index = () => {
         {/* Sales page 2026 */}
         <SalesPage2026 />
 
-        {/* APK Promo no final, como reforço */}
-        <AppPromoSection />
       </main>
       <Footer />
       <ChatFAB onClick={() => openChatWithMessage()} />
