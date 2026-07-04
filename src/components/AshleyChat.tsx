@@ -121,15 +121,45 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messageQueueRef = useRef<string[]>([]);
+  const messageQueueRef = useRef<Array<{ content: string; audioUrl?: string }>>([]);
   const processingQueueRef = useRef(false);
   const hasStartedRef = useRef(false); // Prevents double-greeting (StrictMode / re-opens)
   const isMountedRef = useRef(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+
+  const playMessageAudio = useCallback((msgId: string, url: string) => {
+    if (playingAudioId === msgId && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setPlayingAudioId(null);
+      return;
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    setPlayingAudioId(msgId);
+    audio.play().catch((err) => {
+      console.error('Ashley audio error:', err);
+      setPlayingAudioId(null);
+    });
+    audio.onended = () => {
+      setPlayingAudioId((cur) => (cur === msgId ? null : cur));
+      if (audioRef.current === audio) audioRef.current = null;
+    };
+  }, [playingAudioId]);
 
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
     };
   }, []);
 
@@ -148,7 +178,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
     try {
       while (messageQueueRef.current.length > 0) {
-        const content = messageQueueRef.current.shift()!;
+        const item = messageQueueRef.current.shift()!;
         if (!isMountedRef.current) break;
 
         setIsTyping(true);
@@ -158,12 +188,13 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         setIsTyping(false);
         const newMessage: ChatMessage = {
           id: uid(),
-          content,
+          content: item.content,
           sender: 'bot',
           timestamp: new Date(),
+          audioUrl: item.audioUrl,
         };
         setMessages((prev) => [...prev, newMessage]);
-        setConversationHistory((prev) => [...prev, { role: 'assistant', content }]);
+        setConversationHistory((prev) => [...prev, { role: 'assistant', content: item.content }]);
 
         if (messageQueueRef.current.length > 0) {
           await sleep(MESSAGE_INTERVAL);
@@ -176,9 +207,9 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   }, []);
 
   const addBotMessage = useCallback(
-    (content: string) => {
+    (content: string, audioUrl?: string) => {
       if (!content) return;
-      messageQueueRef.current.push(content);
+      messageQueueRef.current.push({ content, audioUrl });
       void processMessageQueue();
     },
     [processMessageQueue]
