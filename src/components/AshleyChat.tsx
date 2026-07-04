@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, X, Check } from 'lucide-react';
+import { Send, X, Check, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChatMessage, Plan } from '@/types';
@@ -9,6 +9,9 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import cineflixLogo from '@/assets/cineflix-logo.png';
 import ashleyAvatar from '@/assets/ashley-avatar.png.asset.json';
+import ashleyGreeting from '@/assets/ashley-greeting.mp3.asset.json';
+import ashleyQuerido from '@/assets/ashley-querido.mp3.asset.json';
+import ashleyQuerida from '@/assets/ashley-querida.mp3.asset.json';
 
 interface AshleyChatProps {
   isOpen: boolean;
@@ -118,15 +121,45 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messageQueueRef = useRef<string[]>([]);
+  const messageQueueRef = useRef<Array<{ content: string; audioUrl?: string }>>([]);
   const processingQueueRef = useRef(false);
   const hasStartedRef = useRef(false); // Prevents double-greeting (StrictMode / re-opens)
   const isMountedRef = useRef(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+
+  const playMessageAudio = useCallback((msgId: string, url: string) => {
+    if (playingAudioId === msgId && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setPlayingAudioId(null);
+      return;
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    setPlayingAudioId(msgId);
+    audio.play().catch((err) => {
+      console.error('Ashley audio error:', err);
+      setPlayingAudioId(null);
+    });
+    audio.onended = () => {
+      setPlayingAudioId((cur) => (cur === msgId ? null : cur));
+      if (audioRef.current === audio) audioRef.current = null;
+    };
+  }, [playingAudioId]);
 
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
     };
   }, []);
 
@@ -145,7 +178,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
     try {
       while (messageQueueRef.current.length > 0) {
-        const content = messageQueueRef.current.shift()!;
+        const item = messageQueueRef.current.shift()!;
         if (!isMountedRef.current) break;
 
         setIsTyping(true);
@@ -155,12 +188,13 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         setIsTyping(false);
         const newMessage: ChatMessage = {
           id: uid(),
-          content,
+          content: item.content,
           sender: 'bot',
           timestamp: new Date(),
+          audioUrl: item.audioUrl,
         };
         setMessages((prev) => [...prev, newMessage]);
-        setConversationHistory((prev) => [...prev, { role: 'assistant', content }]);
+        setConversationHistory((prev) => [...prev, { role: 'assistant', content: item.content }]);
 
         if (messageQueueRef.current.length > 0) {
           await sleep(MESSAGE_INTERVAL);
@@ -173,9 +207,9 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   }, []);
 
   const addBotMessage = useCallback(
-    (content: string) => {
+    (content: string, audioUrl?: string) => {
       if (!content) return;
-      messageQueueRef.current.push(content);
+      messageQueueRef.current.push({ content, audioUrl });
       void processMessageQueue();
     },
     [processMessageQueue]
@@ -250,9 +284,9 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       await sleep(300);
       if (initialMessage) {
         addBotMessage(initialMessage);
-        addBotMessage('Sou Ashley da CineflixPayment! 👋 Me diz seu nome pra eu te ajudar melhor?');
+        addBotMessage('Oi! Eu sou a Ashley da CineflixPayment 👋 Toca no ▶️ pra me ouvir. Me diz seu nome pra eu te ajudar melhor?', ashleyGreeting.url);
       } else {
-        addBotMessage('Olá! Sou Ashley da CineflixPayment! 👋 Qual é o seu nome?');
+        addBotMessage('Oi! Eu sou a Ashley da CineflixPayment 👋 Toca no ▶️ pra me ouvir. Qual é o seu nome?', ashleyGreeting.url);
       }
       setStep('name');
     };
@@ -300,9 +334,10 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       if (extractedName) {
         setUserName(extractedName);
         const guessed = guessGenderFromName(extractedName);
-        addBotMessage(`Prazer em te conhecer, ${extractedName}! 😊`);
+        const audio = guessed === 'male' ? ashleyQuerido.url : guessed === 'female' ? ashleyQuerida.url : undefined;
+        const carinho = guessed === 'male' ? 'querido' : guessed === 'female' ? 'querida' : 'meu bem';
+        addBotMessage(`Aaah, ${carinho}! Prazer em te conhecer 😊`, audio);
         if (guessed) {
-          // Pula a pergunta de gênero — Ashley já deduziu pelo nome
           setUserGender(guessed);
           await showGenderRecommendations(guessed);
         } else {
@@ -358,11 +393,13 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
   const showGenderRecommendations = async (gender: 'male' | 'female') => {
     setStep('recommendations');
+    const audio = gender === 'male' ? ashleyQuerido.url : ashleyQuerida.url;
+    const carinho = gender === 'male' ? 'querido' : 'querida';
     const intro =
       gender === 'male'
-        ? `Show, ${userName}! Olha o catálogo que separei pra você 🔥`
-        : `Perfeito, ${userName}! Preparei o conteúdo ideal pra você 💖`;
-    addBotMessage(intro);
+        ? `Show, ${carinho}! Olha o catálogo que separei pra você 🔥`
+        : `Perfeito, ${carinho}! Preparei o conteúdo ideal pra você 💖`;
+    addBotMessage(intro, audio);
 
     const recs =
       gender === 'male'
@@ -475,6 +512,25 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
               )}
             >
               {msg.content}
+              {msg.sender === 'bot' && msg.audioUrl && (
+                <button
+                  onClick={() => playMessageAudio(msg.id, msg.audioUrl!)}
+                  className="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-cinema-red/20 hover:bg-cinema-red/30 border border-cinema-red/40 text-xs font-semibold text-white transition-colors"
+                  aria-label={playingAudioId === msg.id ? 'Pausar áudio da Ashley' : 'Ouvir áudio da Ashley'}
+                >
+                  {playingAudioId === msg.id ? (
+                    <>
+                      <Pause className="w-3.5 h-3.5" />
+                      Pausar áudio
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-3.5 h-3.5 fill-white" />
+                      Ouvir Ashley
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           ))}
 
