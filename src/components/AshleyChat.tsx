@@ -284,9 +284,9 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       await sleep(300);
       if (initialMessage) {
         addBotMessage(initialMessage);
-        addBotMessage('Sou Ashley da CineflixPayment! 👋 Me diz seu nome pra eu te ajudar melhor?');
+        addBotMessage('Oi! Eu sou a Ashley da CineflixPayment 👋 Toca no ▶️ pra me ouvir. Me diz seu nome pra eu te ajudar melhor?', ashleyGreeting.url);
       } else {
-        addBotMessage('Olá! Sou Ashley da CineflixPayment! 👋 Qual é o seu nome?');
+        addBotMessage('Oi! Eu sou a Ashley da CineflixPayment 👋 Toca no ▶️ pra me ouvir. Qual é o seu nome?', ashleyGreeting.url);
       }
       setStep('name');
     };
