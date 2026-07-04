@@ -35,6 +35,7 @@ export interface ChatMessage {
   timestamp: Date;
   isTyping?: boolean;
   actions?: ChatAction[];
+  audioUrl?: string;
 }
 
 export interface ChatAction {
