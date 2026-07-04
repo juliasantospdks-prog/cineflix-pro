@@ -393,11 +393,13 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
   const showGenderRecommendations = async (gender: 'male' | 'female') => {
     setStep('recommendations');
+    const audio = gender === 'male' ? ashleyQuerido.url : ashleyQuerida.url;
+    const carinho = gender === 'male' ? 'querido' : 'querida';
     const intro =
       gender === 'male'
-        ? `Show, ${userName}! Olha o catálogo que separei pra você 🔥`
-        : `Perfeito, ${userName}! Preparei o conteúdo ideal pra você 💖`;
-    addBotMessage(intro);
+        ? `Show, ${carinho}! Olha o catálogo que separei pra você 🔥`
+        : `Perfeito, ${carinho}! Preparei o conteúdo ideal pra você 💖`;
+    addBotMessage(intro, audio);
 
     const recs =
       gender === 'male'
