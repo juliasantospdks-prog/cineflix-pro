@@ -28,6 +28,8 @@ export interface Upsell {
   price: number;
 }
 
+export type ChatMessageKind = 'text' | 'audio' | 'plan' | 'comparison' | 'receipt';
+
 export interface ChatMessage {
   id: string;
   content: string;
@@ -36,6 +38,8 @@ export interface ChatMessage {
   isTyping?: boolean;
   actions?: ChatAction[];
   audioUrl?: string;
+  kind?: ChatMessageKind;
+  payload?: unknown;
 }
 
 export interface ChatAction {
