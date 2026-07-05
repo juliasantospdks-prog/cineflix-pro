@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Play, Pause, Mic } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import ashleyAvatar from '@/assets/ashley-avatar.png.asset.json';
+
+
 
 interface AshleyAudioBubbleProps {
   url: string;
