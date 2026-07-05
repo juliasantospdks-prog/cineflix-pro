@@ -108,16 +108,8 @@ const AshleyAudioBubble = ({ url, className }: AshleyAudioBubbleProps) => {
   const displayTime = playing || current > 0 ? formatTime(current) : formatTime(duration);
 
   return (
-    <div className={cn('flex items-center gap-2.5 min-w-[240px]', className)}>
-      {/* Avatar */}
-      <div className="relative flex-shrink-0">
-        <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-cinema-red/40">
-          <img src={ashleyAvatar.url} alt="Ashley" className="w-full h-full object-cover" />
-        </div>
-        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-cinema-red flex items-center justify-center border-2 border-[#202c33]">
-          <Mic className="w-2 h-2 text-white" />
-        </div>
-      </div>
+    <div className={cn('flex items-center gap-2.5 min-w-[220px]', className)}>
+
 
       {/* Play */}
       <button
