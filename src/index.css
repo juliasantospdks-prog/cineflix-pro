@@ -357,3 +357,70 @@
     animation: shimmer 1.5s infinite;
   }
 }
+
+@layer components {
+  /* WhatsApp-inspired chat surface (kept inside the CineflixPayment dark shell) */
+  .wa-chat-surface {
+    background-color: #0b141a;
+    background-image:
+      radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 22px 22px, 30px 30px;
+    background-position: 0 0, 11px 11px;
+  }
+
+  .wa-bubble-bot {
+    background-color: #202c33;
+    color: #e9edef;
+    border-top-left-radius: 4px;
+  }
+
+  .wa-bubble-user {
+    background-color: #005c4b;
+    color: #e9edef;
+    border-top-right-radius: 4px;
+  }
+
+  .wa-bubble-tail-left::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -6px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid #202c33;
+    border-left: 8px solid transparent;
+  }
+
+  .wa-bubble-tail-right::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -6px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid #005c4b;
+    border-right: 8px solid transparent;
+  }
+
+  .wa-time {
+    font-size: 10px;
+    color: rgba(233, 237, 239, 0.55);
+    line-height: 1;
+  }
+
+  .wa-check {
+    color: #53bdeb;
+  }
+
+  .wa-date-chip {
+    background-color: rgba(32, 44, 51, 0.85);
+    color: rgba(233, 237, 239, 0.7);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 999px;
+    backdrop-filter: blur(4px);
+  }
+}
