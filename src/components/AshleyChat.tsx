@@ -41,8 +41,14 @@ type ChatStep =
   | 'freeChat';
 type UserGender = 'male' | 'female' | null;
 
-const TYPING_DELAY = 620;
-const MESSAGE_INTERVAL = 760;
+// Human-like pacing: give each message a real breathing pause,
+// and stretch it after audio (so the user has time to listen).
+const TYPING_DELAY_TEXT = 900;
+const TYPING_DELAY_AUDIO = 700;
+const TYPING_DELAY_CARD = 500;
+const PAUSE_AFTER_TEXT = 1300;
+const PAUSE_AFTER_AUDIO = 2600;
+const PAUSE_AFTER_CARD = 1100;
 const MAX_INPUT_LEN = 500;
 
 const ASHLEY_AUDIO_URLS = [
@@ -202,6 +208,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
 
+
   const processMessageQueue = useCallback(async () => {
     if (processingQueueRef.current) return;
     processingQueueRef.current = true;
@@ -210,8 +217,15 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         const item = messageQueueRef.current.shift()!;
         if (!isMountedRef.current) break;
 
+        const typingDelay =
+          item.kind === 'audio'
+            ? TYPING_DELAY_AUDIO
+            : item.kind === 'text'
+            ? TYPING_DELAY_TEXT
+            : TYPING_DELAY_CARD;
+
         setIsTyping(true);
-        await sleep(TYPING_DELAY);
+        await sleep(typingDelay);
         if (!isMountedRef.current) break;
         setIsTyping(false);
 
@@ -231,7 +245,17 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         if (item.kind === 'text' || item.kind === 'audio') {
           setConversationHistory((prev) => [...prev, { role: 'assistant', content: item.content }]);
         }
-        if (messageQueueRef.current.length > 0) await sleep(MESSAGE_INTERVAL);
+        if (messageQueueRef.current.length > 0) {
+          const pause =
+            item.kind === 'audio'
+              ? PAUSE_AFTER_AUDIO
+              : item.kind === 'text'
+              ? PAUSE_AFTER_TEXT
+              : PAUSE_AFTER_CARD;
+          // small human jitter (±180ms)
+          const jitter = Math.floor(Math.random() * 360) - 180;
+          await sleep(Math.max(400, pause + jitter));
+        }
       }
     } finally {
       processingQueueRef.current = false;
@@ -738,11 +762,6 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
                   {msg.kind === 'audio' && msg.audioUrl ? (
                     <div className="py-1.5">
                       <AshleyAudioBubble url={msg.audioUrl} />
-                      {msg.content && (
-                        <p className="text-[11px] text-white/60 italic mt-1.5 leading-snug">
-                          {msg.content}
-                        </p>
-                      )}
                     </div>
                   ) : (
                     <p className="text-sm leading-relaxed whitespace-pre-wrap pr-12">{msg.content}</p>
