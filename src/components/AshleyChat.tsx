@@ -762,11 +762,6 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
                   {msg.kind === 'audio' && msg.audioUrl ? (
                     <div className="py-1.5">
                       <AshleyAudioBubble url={msg.audioUrl} />
-                      {msg.content && (
-                        <p className="text-[11px] text-white/60 italic mt-1.5 leading-snug">
-                          {msg.content}
-                        </p>
-                      )}
                     </div>
                   ) : (
                     <p className="text-sm leading-relaxed whitespace-pre-wrap pr-12">{msg.content}</p>
