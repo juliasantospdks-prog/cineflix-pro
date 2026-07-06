@@ -41,8 +41,14 @@ type ChatStep =
   | 'freeChat';
 type UserGender = 'male' | 'female' | null;
 
-const TYPING_DELAY = 620;
-const MESSAGE_INTERVAL = 760;
+// Human-like pacing: give each message a real breathing pause,
+// and stretch it after audio (so the user has time to listen).
+const TYPING_DELAY_TEXT = 900;
+const TYPING_DELAY_AUDIO = 700;
+const TYPING_DELAY_CARD = 500;
+const PAUSE_AFTER_TEXT = 1300;
+const PAUSE_AFTER_AUDIO = 2600;
+const PAUSE_AFTER_CARD = 1100;
 const MAX_INPUT_LEN = 500;
 
 const ASHLEY_AUDIO_URLS = [
