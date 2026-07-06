@@ -208,13 +208,6 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
 
-  const processMessageQueue = useCallback(async () => {
-    if (processingQueueRef.current) return;
-    processingQueueRef.current = true;
-    try {
-      while (messageQueueRef.current.length > 0) {
-        const item = messageQueueRef.current.shift()!;
-        if (!isMountedRef.current) break;
 
   const processMessageQueue = useCallback(async () => {
     if (processingQueueRef.current) return;
