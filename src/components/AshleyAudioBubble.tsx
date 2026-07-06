@@ -10,6 +10,24 @@ interface AshleyAudioBubbleProps {
 }
 
 const BAR_COUNT = 34;
+const PRELOADED_AUDIO = new Map<string, HTMLAudioElement>();
+
+export const preloadAshleyAudioFiles = (urls: string[]) => {
+  if (typeof window === 'undefined') return;
+  urls.forEach((url) => {
+    if (!url || PRELOADED_AUDIO.has(url)) return;
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'audio';
+    link.href = url;
+    document.head.appendChild(link);
+
+    const audio = new Audio(url);
+    audio.preload = 'auto';
+    audio.load();
+    PRELOADED_AUDIO.set(url, audio);
+  });
+};
 
 // Pseudo-random but stable waveform pattern per url
 function heightsFor(seed: string): number[] {
@@ -41,24 +59,37 @@ const AshleyAudioBubble = ({ url, className }: AshleyAudioBubbleProps) => {
   const [current, setCurrent] = useState(0);
   const [rate, setRate] = useState<1 | 1.5 | 2>(1);
   const [heard, setHeard] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   const heights = useRef(heightsFor(url)).current;
 
   useEffect(() => {
     const a = new Audio(url);
-    a.preload = 'metadata';
+    a.preload = 'auto';
     audioRef.current = a;
-    const onMeta = () => setDuration(a.duration || 0);
+    const onMeta = () => {
+      setDuration(a.duration || 0);
+      setIsReady(a.readyState >= 2);
+    };
+    const onReady = () => {
+      setDuration(a.duration || 0);
+      setIsReady(true);
+    };
     const onEnd = () => {
       setPlaying(false);
       setHeard(true);
       setCurrent(a.duration || 0);
     };
     a.addEventListener('loadedmetadata', onMeta);
+    a.addEventListener('loadeddata', onReady);
+    a.addEventListener('canplaythrough', onReady);
     a.addEventListener('ended', onEnd);
+    a.load();
     return () => {
       a.pause();
       a.removeEventListener('loadedmetadata', onMeta);
+      a.removeEventListener('loadeddata', onReady);
+      a.removeEventListener('canplaythrough', onReady);
       a.removeEventListener('ended', onEnd);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
@@ -108,14 +139,17 @@ const AshleyAudioBubble = ({ url, className }: AshleyAudioBubbleProps) => {
   const displayTime = playing || current > 0 ? formatTime(current) : formatTime(duration);
 
   return (
-    <div className={cn('flex items-center gap-2.5 min-w-[220px]', className)}>
+    <div className={cn('flex items-center gap-2.5 min-w-[228px]', className)}>
 
 
       {/* Play */}
       <button
         onClick={toggle}
         aria-label={playing ? 'Pausar áudio' : 'Ouvir Ashley'}
-        className="w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center flex-shrink-0 transition-transform active:scale-90"
+        className={cn(
+          'w-9 h-9 rounded-full bg-white/95 hover:bg-white flex items-center justify-center flex-shrink-0 transition-transform active:scale-90 shadow-lg',
+          !isReady && 'bg-white/80'
+        )}
       >
         {playing ? (
           <Pause className="w-4 h-4 text-[#202c33]" fill="currentColor" />
@@ -127,7 +161,7 @@ const AshleyAudioBubble = ({ url, className }: AshleyAudioBubbleProps) => {
       {/* Waveform */}
       <div className="flex-1 flex flex-col gap-1 min-w-0">
         <div
-          className="relative h-6 flex items-center gap-[2px] cursor-pointer select-none"
+          className="relative h-7 flex items-center gap-[2px] cursor-pointer select-none overflow-hidden rounded-md"
           onClick={seekFromEvent}
           role="slider"
           aria-valuemin={0}
@@ -142,8 +176,9 @@ const AshleyAudioBubble = ({ url, className }: AshleyAudioBubbleProps) => {
                 key={i}
                 className={cn(
                   'flex-1 rounded-full transition-colors duration-75',
-                  active ? 'bg-white' : 'bg-white/35',
-                  playing && active && 'animate-pulse'
+                  active ? 'bg-cinema-glow' : 'bg-white/30',
+                  playing && active && 'shadow-[0_0_10px_rgba(220,38,38,0.65)]',
+                  !isReady && 'animate-pulse'
                 )}
                 style={{ height: `${Math.max(15, h * 100)}%` }}
               />
@@ -151,7 +186,7 @@ const AshleyAudioBubble = ({ url, className }: AshleyAudioBubbleProps) => {
           })}
         </div>
         <div className="flex items-center justify-between text-[10px] text-white/60 font-medium">
-          <span>{displayTime}</span>
+          <span>{isReady || duration > 0 ? displayTime : '0:00'}</span>
           {!heard && !playing && current === 0 && (
             <span className="w-1.5 h-1.5 rounded-full bg-cinema-red animate-pulse" aria-label="Não ouvido" />
           )}

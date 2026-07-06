@@ -17,9 +17,11 @@ import ashleyPitchApk from '@/assets/ashley-pitch-apk.mp3.asset.json';
 import ashleyComparacao from '@/assets/ashley-comparacao.mp3.asset.json';
 import ashleyUpsell from '@/assets/ashley-upsell.mp3.asset.json';
 import ashleyComprovante from '@/assets/ashley-comprovante.mp3.asset.json';
-import AshleyAudioBubble from './AshleyAudioBubble';
+import AshleyAudioBubble, { preloadAshleyAudioFiles } from './AshleyAudioBubble';
 import PlanComparisonCard from './PlanComparisonCard';
 import ChatReceiptCard from './ChatReceiptCard';
+import ChatMovieResults from './ChatMovieResults';
+import { TMDBMovie, TMDBResponse } from '@/hooks/useTMDB';
 
 interface AshleyChatProps {
   isOpen: boolean;
@@ -39,9 +41,22 @@ type ChatStep =
   | 'freeChat';
 type UserGender = 'male' | 'female' | null;
 
-const TYPING_DELAY = 900;
-const MESSAGE_INTERVAL = 350;
+const TYPING_DELAY = 620;
+const MESSAGE_INTERVAL = 760;
 const MAX_INPUT_LEN = 500;
+
+const ASHLEY_AUDIO_URLS = [
+  ashleyGreeting.url,
+  ashleyQuerido.url,
+  ashleyQuerida.url,
+  ashleyPitchMensal.url,
+  ashleyPitchTrimestral.url,
+  ashleyPitchAnual.url,
+  ashleyPitchApk.url,
+  ashleyComparacao.url,
+  ashleyUpsell.url,
+  ashleyComprovante.url,
+];
 
 const PLAN_AUDIO: Record<string, string> = {
   mensal: ashleyPitchMensal.url,
@@ -111,7 +126,46 @@ type QueueItem =
   | { kind: 'text' | 'audio'; content: string; audioUrl?: string }
   | { kind: 'plan'; content: string; payload: Plan }
   | { kind: 'comparison'; content: string; payload: { cineflixPrice: number; planLabel: string } }
+  | { kind: 'movies'; content: string; payload: { query: string; movies: TMDBMovie[] } }
   | { kind: 'receipt'; content: string; payload: { userName: string; plan: Plan; upsells: Upsell[] } };
+
+const getMovieTitle = (movie: TMDBMovie) => movie.title || movie.name || 'esse título';
+
+const stripCatalogQuery = (raw: string) => {
+  const cleaned = raw
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\b(voces|voce|vc|tem|têm|possui|possue|passa|assistir|assisti|ver|quero|queria|procura|procurar|buscar|busca|filme|serie|series|anime|desenho|catalogo|disponivel|na cineflix|no catalogo|ai|aí|por favor|pfv)\b/g, ' ')
+    .replace(/[?!.,;:()"']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || raw.trim();
+};
+
+const isPlanIntent = (text: string) =>
+  /\b(plano|planos|preço|preco|valor|assinar|assinatura|mensal|trimestral|anual|apk|vip|comprar|pagar)\b/i.test(text);
+
+const findRequestedPlan = (text: string) => {
+  const lower = text.toLowerCase();
+  if (/\bmensal\b/.test(lower)) return plans.find((p) => p.id === 'mensal') || null;
+  if (/\btrimestral\b|\b3\s*meses\b/.test(lower)) return plans.find((p) => p.id === 'trimestral') || null;
+  if (/\banual\b|\bvip\b|\bano\b/.test(lower)) return plans.find((p) => p.id === 'anual') || null;
+  if (/\bapk\b|\bapp\b|\baplicativo\b/.test(lower)) return plans.find((p) => p.id === 'apk') || null;
+  return null;
+};
+
+const looksLikeCatalogIntent = (text: string, currentStep: ChatStep) => {
+  if (isPlanIntent(text)) return false;
+  if (/\b(filme|série|serie|anime|doramas?|k-drama|catálogo|catalogo|assistir|tem|têm|disponível|disponivel|passa|procura|buscar|desenho)\b/i.test(text)) {
+    return true;
+  }
+  const generic = /^(oi|olá|ola|bom dia|boa tarde|boa noite|sim|não|nao|ok|beleza|obrigado|obrigada|valeu)$/i;
+  return (currentStep === 'recommendations' || currentStep === 'freeChat' || currentStep === 'plans') &&
+    text.trim().length >= 3 &&
+    text.trim().length <= 70 &&
+    !generic.test(text.trim());
+};
 
 const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
