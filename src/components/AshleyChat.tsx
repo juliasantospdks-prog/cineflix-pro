@@ -216,8 +216,23 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         const item = messageQueueRef.current.shift()!;
         if (!isMountedRef.current) break;
 
+  const processMessageQueue = useCallback(async () => {
+    if (processingQueueRef.current) return;
+    processingQueueRef.current = true;
+    try {
+      while (messageQueueRef.current.length > 0) {
+        const item = messageQueueRef.current.shift()!;
+        if (!isMountedRef.current) break;
+
+        const typingDelay =
+          item.kind === 'audio'
+            ? TYPING_DELAY_AUDIO
+            : item.kind === 'text'
+            ? TYPING_DELAY_TEXT
+            : TYPING_DELAY_CARD;
+
         setIsTyping(true);
-        await sleep(TYPING_DELAY);
+        await sleep(typingDelay);
         if (!isMountedRef.current) break;
         setIsTyping(false);
 
@@ -237,7 +252,17 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         if (item.kind === 'text' || item.kind === 'audio') {
           setConversationHistory((prev) => [...prev, { role: 'assistant', content: item.content }]);
         }
-        if (messageQueueRef.current.length > 0) await sleep(MESSAGE_INTERVAL);
+        if (messageQueueRef.current.length > 0) {
+          const pause =
+            item.kind === 'audio'
+              ? PAUSE_AFTER_AUDIO
+              : item.kind === 'text'
+              ? PAUSE_AFTER_TEXT
+              : PAUSE_AFTER_CARD;
+          // small human jitter (±180ms)
+          const jitter = Math.floor(Math.random() * 360) - 180;
+          await sleep(Math.max(400, pause + jitter));
+        }
       }
     } finally {
       processingQueueRef.current = false;
