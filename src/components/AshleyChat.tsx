@@ -698,6 +698,18 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
               );
             }
 
+            if (msg.kind === 'movies' && msg.payload) {
+              const p = msg.payload as { query: string; movies: TMDBMovie[] };
+              return (
+                <div key={msg.id} className="flex justify-start animate-fade-in">
+                  <div className="max-w-[94%] w-full">
+                    <ChatMovieResults query={p.query} movies={p.movies} onConfirm={handleConfirmMovie} />
+                    <div className="wa-time text-right pr-1 pt-1">{time}</div>
+                  </div>
+                </div>
+              );
+            }
+
             if (msg.kind === 'receipt' && msg.payload) {
               const p = msg.payload as { userName: string; plan: Plan; upsells: Upsell[] };
               return (
