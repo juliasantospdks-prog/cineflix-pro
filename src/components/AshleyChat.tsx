@@ -57,7 +57,6 @@ const ASHLEY_AUDIO_URLS = [
   ashleyPitchMensal.url,
   ashleyPitchTrimestral.url,
   ashleyPitchAnual.url,
-  ashleyPitchApk.url,
   ashleyComparacao.url,
   ashleyUpsell.url,
   ashleyComprovante.url,
@@ -67,10 +66,9 @@ const PLAN_AUDIO: Record<string, string> = {
   mensal: ashleyPitchMensal.url,
   trimestral: ashleyPitchTrimestral.url,
   anual: ashleyPitchAnual.url,
-  apk: ashleyPitchApk.url,
 };
 
-const PLAN_ORDER = ['mensal', 'trimestral', 'anual', 'apk'];
+const PLAN_ORDER = ['mensal', 'trimestral', 'anual'];
 
 let __msgSeq = 0;
 const uid = () => `m_${Date.now()}_${++__msgSeq}_${Math.random().toString(36).slice(2, 7)}`;
