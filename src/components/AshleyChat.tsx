@@ -676,6 +676,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const handleSelectGender = (gender: 'male' | 'female') => {
     if (isAiLoading || isTyping) return;
     setUserGender(gender);
+    saveSession({ userGender: gender });
     addUserMessage(gender === 'male' ? 'Sou homem' : 'Sou mulher');
     void showGenderRecommendations(gender);
   };
