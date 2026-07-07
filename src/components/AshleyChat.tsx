@@ -257,8 +257,12 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
 
   const processMessageQueue = useCallback(async () => {
-    if (processingQueueRef.current) return;
+    if (processingQueueRef.current) {
+      LOG('queue.busy — process call skipped', { pending: messageQueueRef.current.length });
+      return;
+    }
     processingQueueRef.current = true;
+    LOG('queue.start', { pending: messageQueueRef.current.length });
     try {
       while (messageQueueRef.current.length > 0) {
         const item = messageQueueRef.current.shift()!;
@@ -270,6 +274,13 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
             : item.kind === 'text'
             ? TYPING_DELAY_TEXT
             : TYPING_DELAY_CARD;
+
+        LOG('queue.next', {
+          kind: item.kind,
+          preview: item.content?.slice(0, 60),
+          typingDelayMs: typingDelay,
+          remaining: messageQueueRef.current.length,
+        });
 
         setIsTyping(true);
         await sleep(typingDelay);
@@ -289,6 +300,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
               : undefined,
         };
         setMessages((prev) => [...prev, msg]);
+        LOG('queue.sent', { id: msg.id, kind: item.kind });
         if (item.kind === 'text' || item.kind === 'audio') {
           setConversationHistory((prev) => [...prev, { role: 'assistant', content: item.content }]);
         }
@@ -297,8 +309,6 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
           if (item.kind === 'audio') {
             const audioUrl = (item as { audioUrl?: string }).audioUrl;
             const dur = audioUrl ? getPreloadedAudioDuration(audioUrl) : 0;
-            // Wait for the full audio + a human beat so the next msg never
-            // overlaps playback. Fallback to constant if duration unknown.
             pause = dur > 0 ? Math.round(dur * 1000) + 900 : PAUSE_AFTER_AUDIO;
           } else if (item.kind === 'text') {
             pause = PAUSE_AFTER_TEXT;
@@ -306,18 +316,33 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
             pause = PAUSE_AFTER_CARD;
           }
           const jitter = Math.floor(Math.random() * 360) - 180;
-          await sleep(Math.max(500, pause + jitter));
+          const wait = Math.max(500, pause + jitter);
+          const upcoming = messageQueueRef.current[0];
+          LOG('queue.pause', {
+            afterKind: item.kind,
+            waitMs: wait,
+            nextKind: upcoming?.kind,
+            nextPreview: upcoming?.content?.slice(0, 60),
+          });
+          await sleep(wait);
         }
       }
     } finally {
       processingQueueRef.current = false;
       if (isMountedRef.current) setIsTyping(false);
+      LOG('queue.idle');
     }
   }, []);
 
   const enqueue = useCallback(
     (item: QueueItem) => {
       messageQueueRef.current.push(item);
+      LOG('queue.enqueue', {
+        kind: item.kind,
+        preview: item.content?.slice(0, 60),
+        depth: messageQueueRef.current.length,
+        processing: processingQueueRef.current,
+      });
       void processMessageQueue();
     },
     [processMessageQueue]
