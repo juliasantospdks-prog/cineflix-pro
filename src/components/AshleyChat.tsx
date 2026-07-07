@@ -13,11 +13,10 @@ import ashleyQuerida from '@/assets/ashley-querida.mp3.asset.json';
 import ashleyPitchMensal from '@/assets/ashley-pitch-mensal.mp3.asset.json';
 import ashleyPitchTrimestral from '@/assets/ashley-pitch-trimestral.mp3.asset.json';
 import ashleyPitchAnual from '@/assets/ashley-pitch-anual.mp3.asset.json';
-import ashleyPitchApk from '@/assets/ashley-pitch-apk.mp3.asset.json';
 import ashleyComparacao from '@/assets/ashley-comparacao.mp3.asset.json';
 import ashleyUpsell from '@/assets/ashley-upsell.mp3.asset.json';
 import ashleyComprovante from '@/assets/ashley-comprovante.mp3.asset.json';
-import AshleyAudioBubble, { preloadAshleyAudioFiles } from './AshleyAudioBubble';
+import AshleyAudioBubble, { preloadAshleyAudioFiles, getPreloadedAudioDuration } from './AshleyAudioBubble';
 import PlanComparisonCard from './PlanComparisonCard';
 import ChatReceiptCard from './ChatReceiptCard';
 import ChatMovieResults from './ChatMovieResults';
@@ -58,7 +57,6 @@ const ASHLEY_AUDIO_URLS = [
   ashleyPitchMensal.url,
   ashleyPitchTrimestral.url,
   ashleyPitchAnual.url,
-  ashleyPitchApk.url,
   ashleyComparacao.url,
   ashleyUpsell.url,
   ashleyComprovante.url,
@@ -68,10 +66,9 @@ const PLAN_AUDIO: Record<string, string> = {
   mensal: ashleyPitchMensal.url,
   trimestral: ashleyPitchTrimestral.url,
   anual: ashleyPitchAnual.url,
-  apk: ashleyPitchApk.url,
 };
 
-const PLAN_ORDER = ['mensal', 'trimestral', 'anual', 'apk'];
+const PLAN_ORDER = ['mensal', 'trimestral', 'anual'];
 
 let __msgSeq = 0;
 const uid = () => `m_${Date.now()}_${++__msgSeq}_${Math.random().toString(36).slice(2, 7)}`;
@@ -150,14 +147,13 @@ const stripCatalogQuery = (raw: string) => {
 };
 
 const isPlanIntent = (text: string) =>
-  /\b(plano|planos|preço|preco|valor|assinar|assinatura|mensal|trimestral|anual|apk|vip|comprar|pagar)\b/i.test(text);
+  /\b(plano|planos|preço|preco|valor|assinar|assinatura|mensal|trimestral|anual|vip|comprar|pagar)\b/i.test(text);
 
 const findRequestedPlan = (text: string) => {
   const lower = text.toLowerCase();
   if (/\bmensal\b/.test(lower)) return plans.find((p) => p.id === 'mensal') || null;
   if (/\btrimestral\b|\b3\s*meses\b/.test(lower)) return plans.find((p) => p.id === 'trimestral') || null;
   if (/\banual\b|\bvip\b|\bano\b/.test(lower)) return plans.find((p) => p.id === 'anual') || null;
-  if (/\bapk\b|\bapp\b|\baplicativo\b/.test(lower)) return plans.find((p) => p.id === 'apk') || null;
   return null;
 };
 
@@ -246,15 +242,20 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
           setConversationHistory((prev) => [...prev, { role: 'assistant', content: item.content }]);
         }
         if (messageQueueRef.current.length > 0) {
-          const pause =
-            item.kind === 'audio'
-              ? PAUSE_AFTER_AUDIO
-              : item.kind === 'text'
-              ? PAUSE_AFTER_TEXT
-              : PAUSE_AFTER_CARD;
-          // small human jitter (±180ms)
+          let pause: number;
+          if (item.kind === 'audio') {
+            const audioUrl = (item as { audioUrl?: string }).audioUrl;
+            const dur = audioUrl ? getPreloadedAudioDuration(audioUrl) : 0;
+            // Wait for the full audio + a human beat so the next msg never
+            // overlaps playback. Fallback to constant if duration unknown.
+            pause = dur > 0 ? Math.round(dur * 1000) + 900 : PAUSE_AFTER_AUDIO;
+          } else if (item.kind === 'text') {
+            pause = PAUSE_AFTER_TEXT;
+          } else {
+            pause = PAUSE_AFTER_CARD;
+          }
           const jitter = Math.floor(Math.random() * 360) - 180;
-          await sleep(Math.max(400, pause + jitter));
+          await sleep(Math.max(500, pause + jitter));
         }
       }
     } finally {

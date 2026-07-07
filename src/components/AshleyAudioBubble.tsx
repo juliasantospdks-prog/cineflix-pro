@@ -29,6 +29,13 @@ export const preloadAshleyAudioFiles = (urls: string[]) => {
   });
 };
 
+export const getPreloadedAudioDuration = (url: string): number => {
+  const a = PRELOADED_AUDIO.get(url);
+  if (!a) return 0;
+  const d = a.duration;
+  return Number.isFinite(d) && d > 0 ? d : 0;
+};
+
 // Pseudo-random but stable waveform pattern per url
 function heightsFor(seed: string): number[] {
   let h = 0;
