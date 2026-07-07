@@ -73,6 +73,57 @@ const PLAN_ORDER = ['mensal', 'trimestral', 'anual'];
 let __msgSeq = 0;
 const uid = () => `m_${Date.now()}_${++__msgSeq}_${Math.random().toString(36).slice(2, 7)}`;
 
+// ---- Device identity + session persistence ----
+const DEVICE_KEY = 'cineflix.ashley.deviceId';
+const SESSION_KEY = 'cineflix.ashley.session.v1';
+
+const getDeviceId = (): string => {
+  if (typeof window === 'undefined') return 'ssr';
+  try {
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id) {
+      id = `dev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(DEVICE_KEY, id);
+    }
+    return id;
+  } catch {
+    return 'nostorage';
+  }
+};
+
+interface AshleySession {
+  greeted?: boolean;
+  userName?: string;
+  userGender?: UserGender;
+  lastSeen?: number;
+}
+
+const loadSession = (): AshleySession => {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? (JSON.parse(raw) as AshleySession) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveSession = (patch: AshleySession) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const cur = loadSession();
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ ...cur, ...patch, lastSeen: Date.now() }));
+  } catch {
+    /* ignore */
+  }
+};
+
+// ---- Structured console logger for the chat state machine ----
+const LOG = (event: string, data?: Record<string, unknown>) => {
+  // eslint-disable-next-line no-console
+  console.log(`[AshleyChat] ${event}`, data ?? '');
+};
+
 const cleanAIResponse = (text: string): string =>
   (text || '')
     .replace(/\*\*/g, '')
@@ -206,8 +257,12 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
 
   const processMessageQueue = useCallback(async () => {
-    if (processingQueueRef.current) return;
+    if (processingQueueRef.current) {
+      LOG('queue.busy — process call skipped', { pending: messageQueueRef.current.length });
+      return;
+    }
     processingQueueRef.current = true;
+    LOG('queue.start', { pending: messageQueueRef.current.length });
     try {
       while (messageQueueRef.current.length > 0) {
         const item = messageQueueRef.current.shift()!;
@@ -219,6 +274,13 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
             : item.kind === 'text'
             ? TYPING_DELAY_TEXT
             : TYPING_DELAY_CARD;
+
+        LOG('queue.next', {
+          kind: item.kind,
+          preview: item.content?.slice(0, 60),
+          typingDelayMs: typingDelay,
+          remaining: messageQueueRef.current.length,
+        });
 
         setIsTyping(true);
         await sleep(typingDelay);
@@ -238,6 +300,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
               : undefined,
         };
         setMessages((prev) => [...prev, msg]);
+        LOG('queue.sent', { id: msg.id, kind: item.kind });
         if (item.kind === 'text' || item.kind === 'audio') {
           setConversationHistory((prev) => [...prev, { role: 'assistant', content: item.content }]);
         }
@@ -246,8 +309,6 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
           if (item.kind === 'audio') {
             const audioUrl = (item as { audioUrl?: string }).audioUrl;
             const dur = audioUrl ? getPreloadedAudioDuration(audioUrl) : 0;
-            // Wait for the full audio + a human beat so the next msg never
-            // overlaps playback. Fallback to constant if duration unknown.
             pause = dur > 0 ? Math.round(dur * 1000) + 900 : PAUSE_AFTER_AUDIO;
           } else if (item.kind === 'text') {
             pause = PAUSE_AFTER_TEXT;
@@ -255,18 +316,33 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
             pause = PAUSE_AFTER_CARD;
           }
           const jitter = Math.floor(Math.random() * 360) - 180;
-          await sleep(Math.max(500, pause + jitter));
+          const wait = Math.max(500, pause + jitter);
+          const upcoming = messageQueueRef.current[0];
+          LOG('queue.pause', {
+            afterKind: item.kind,
+            waitMs: wait,
+            nextKind: upcoming?.kind,
+            nextPreview: upcoming?.content?.slice(0, 60),
+          });
+          await sleep(wait);
         }
       }
     } finally {
       processingQueueRef.current = false;
       if (isMountedRef.current) setIsTyping(false);
+      LOG('queue.idle');
     }
   }, []);
 
   const enqueue = useCallback(
     (item: QueueItem) => {
       messageQueueRef.current.push(item);
+      LOG('queue.enqueue', {
+        kind: item.kind,
+        preview: item.content?.slice(0, 60),
+        depth: messageQueueRef.current.length,
+        processing: processingQueueRef.current,
+      });
       void processMessageQueue();
     },
     [processMessageQueue]
@@ -417,14 +493,36 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     }
     hasStartedRef.current = true;
 
+    const deviceId = getDeviceId();
+    const session = loadSession();
+    LOG('session.load', { deviceId, session });
+
     const startSequence = async () => {
       await sleep(300);
       if (initialMessage) addBotText(initialMessage);
+
+      if (session.greeted) {
+        // Returning device: skip the audio greeting so Ashley doesn't repeat herself.
+        const name = session.userName || '';
+        if (session.userGender) setUserGender(session.userGender);
+        if (name) setUserName(name);
+        LOG('session.returning — skipping greeting', { name, gender: session.userGender });
+        addBotText(
+          name
+            ? `Oi de novo, ${name}! 💖 Bom te ver por aqui. Me diz o que você quer assistir ou qual plano quer conhecer.`
+            : 'Oi de novo! 💖 Bom te ver por aqui. Me diz o que você quer assistir ou qual plano quer conhecer.'
+        );
+        setStep(name ? 'freeChat' : 'name');
+        return;
+      }
+
       addBotAudio(
         'Oi, meu bem! 🎬 Eu sou a Ashley aqui da CineflixPayment. Toca no ▶️ pra me ouvir. Me diz seu nome, vai?',
         ashleyGreeting.url
       );
       setStep('name');
+      saveSession({ greeted: true });
+      LOG('session.greeted — flag saved');
     };
     void startSequence();
   }, [isOpen, initialMessage, addBotText, addBotAudio]);
@@ -467,14 +565,17 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       }
       if (extracted) {
         setUserName(extracted);
+        saveSession({ userName: extracted });
         const guessed = guessGenderFromName(extracted);
         if (guessed === 'male') {
           addBotAudio(`Aaah, ${extracted}, que nome lindo, querido! 😊`, ashleyQuerido.url);
           setUserGender('male');
+          saveSession({ userGender: 'male' });
           await showGenderRecommendations('male');
         } else if (guessed === 'female') {
           addBotAudio(`Aaah, ${extracted}, que nome lindo, querida! 💖`, ashleyQuerida.url);
           setUserGender('female');
+          saveSession({ userGender: 'female' });
           await showGenderRecommendations('female');
         } else {
           addBotText(`Prazer em te conhecer, ${extracted}! 😊 Me diz: você é homem ou mulher? Pra eu recomendar melhor.`);
@@ -492,9 +593,11 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       const isFemale = /\b(mulher|feminino|ela|mina|girl|woman|menina|garota)\b/i.test(lower);
       if (isMale) {
         setUserGender('male');
+        saveSession({ userGender: 'male' });
         await showGenderRecommendations('male');
       } else if (isFemale) {
         setUserGender('female');
+        saveSession({ userGender: 'female' });
         await showGenderRecommendations('female');
       } else {
         addBotText('Me diz: você é homem ou mulher? 😊');
@@ -573,6 +676,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const handleSelectGender = (gender: 'male' | 'female') => {
     if (isAiLoading || isTyping) return;
     setUserGender(gender);
+    saveSession({ userGender: gender });
     addUserMessage(gender === 'male' ? 'Sou homem' : 'Sou mulher');
     void showGenderRecommendations(gender);
   };
