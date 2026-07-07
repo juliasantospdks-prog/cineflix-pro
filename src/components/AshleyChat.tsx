@@ -565,14 +565,17 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       }
       if (extracted) {
         setUserName(extracted);
+        saveSession({ userName: extracted });
         const guessed = guessGenderFromName(extracted);
         if (guessed === 'male') {
           addBotAudio(`Aaah, ${extracted}, que nome lindo, querido! 😊`, ashleyQuerido.url);
           setUserGender('male');
+          saveSession({ userGender: 'male' });
           await showGenderRecommendations('male');
         } else if (guessed === 'female') {
           addBotAudio(`Aaah, ${extracted}, que nome lindo, querida! 💖`, ashleyQuerida.url);
           setUserGender('female');
+          saveSession({ userGender: 'female' });
           await showGenderRecommendations('female');
         } else {
           addBotText(`Prazer em te conhecer, ${extracted}! 😊 Me diz: você é homem ou mulher? Pra eu recomendar melhor.`);
@@ -590,9 +593,11 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       const isFemale = /\b(mulher|feminino|ela|mina|girl|woman|menina|garota)\b/i.test(lower);
       if (isMale) {
         setUserGender('male');
+        saveSession({ userGender: 'male' });
         await showGenderRecommendations('male');
       } else if (isFemale) {
         setUserGender('female');
+        saveSession({ userGender: 'female' });
         await showGenderRecommendations('female');
       } else {
         addBotText('Me diz: você é homem ou mulher? 😊');
