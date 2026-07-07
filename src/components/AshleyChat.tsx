@@ -242,15 +242,20 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
           setConversationHistory((prev) => [...prev, { role: 'assistant', content: item.content }]);
         }
         if (messageQueueRef.current.length > 0) {
-          const pause =
-            item.kind === 'audio'
-              ? PAUSE_AFTER_AUDIO
-              : item.kind === 'text'
-              ? PAUSE_AFTER_TEXT
-              : PAUSE_AFTER_CARD;
-          // small human jitter (±180ms)
+          let pause: number;
+          if (item.kind === 'audio') {
+            const audioUrl = (item as { audioUrl?: string }).audioUrl;
+            const dur = audioUrl ? getPreloadedAudioDuration(audioUrl) : 0;
+            // Wait for the full audio + a human beat so the next msg never
+            // overlaps playback. Fallback to constant if duration unknown.
+            pause = dur > 0 ? Math.round(dur * 1000) + 900 : PAUSE_AFTER_AUDIO;
+          } else if (item.kind === 'text') {
+            pause = PAUSE_AFTER_TEXT;
+          } else {
+            pause = PAUSE_AFTER_CARD;
+          }
           const jitter = Math.floor(Math.random() * 360) - 180;
-          await sleep(Math.max(400, pause + jitter));
+          await sleep(Math.max(500, pause + jitter));
         }
       }
     } finally {
