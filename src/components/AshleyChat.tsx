@@ -73,6 +73,57 @@ const PLAN_ORDER = ['mensal', 'trimestral', 'anual'];
 let __msgSeq = 0;
 const uid = () => `m_${Date.now()}_${++__msgSeq}_${Math.random().toString(36).slice(2, 7)}`;
 
+// ---- Device identity + session persistence ----
+const DEVICE_KEY = 'cineflix.ashley.deviceId';
+const SESSION_KEY = 'cineflix.ashley.session.v1';
+
+const getDeviceId = (): string => {
+  if (typeof window === 'undefined') return 'ssr';
+  try {
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id) {
+      id = `dev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(DEVICE_KEY, id);
+    }
+    return id;
+  } catch {
+    return 'nostorage';
+  }
+};
+
+interface AshleySession {
+  greeted?: boolean;
+  userName?: string;
+  userGender?: UserGender;
+  lastSeen?: number;
+}
+
+const loadSession = (): AshleySession => {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? (JSON.parse(raw) as AshleySession) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveSession = (patch: AshleySession) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const cur = loadSession();
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ ...cur, ...patch, lastSeen: Date.now() }));
+  } catch {
+    /* ignore */
+  }
+};
+
+// ---- Structured console logger for the chat state machine ----
+const LOG = (event: string, data?: Record<string, unknown>) => {
+  // eslint-disable-next-line no-console
+  console.log(`[AshleyChat] ${event}`, data ?? '');
+};
+
 const cleanAIResponse = (text: string): string =>
   (text || '')
     .replace(/\*\*/g, '')
