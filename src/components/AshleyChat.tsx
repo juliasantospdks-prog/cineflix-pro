@@ -493,14 +493,36 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     }
     hasStartedRef.current = true;
 
+    const deviceId = getDeviceId();
+    const session = loadSession();
+    LOG('session.load', { deviceId, session });
+
     const startSequence = async () => {
       await sleep(300);
       if (initialMessage) addBotText(initialMessage);
+
+      if (session.greeted) {
+        // Returning device: skip the audio greeting so Ashley doesn't repeat herself.
+        const name = session.userName || '';
+        if (session.userGender) setUserGender(session.userGender);
+        if (name) setUserName(name);
+        LOG('session.returning — skipping greeting', { name, gender: session.userGender });
+        addBotText(
+          name
+            ? `Oi de novo, ${name}! 💖 Bom te ver por aqui. Me diz o que você quer assistir ou qual plano quer conhecer.`
+            : 'Oi de novo! 💖 Bom te ver por aqui. Me diz o que você quer assistir ou qual plano quer conhecer.'
+        );
+        setStep(name ? 'freeChat' : 'name');
+        return;
+      }
+
       addBotAudio(
         'Oi, meu bem! 🎬 Eu sou a Ashley aqui da CineflixPayment. Toca no ▶️ pra me ouvir. Me diz seu nome, vai?',
         ashleyGreeting.url
       );
       setStep('name');
+      saveSession({ greeted: true });
+      LOG('session.greeted — flag saved');
     };
     void startSequence();
   }, [isOpen, initialMessage, addBotText, addBotAudio]);
