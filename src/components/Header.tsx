@@ -65,8 +65,8 @@ const Header = () => {
             {user ? (
               <>
                 {isAdmin && (
-                  <Link to="/admin" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cinema-red/20 border border-cinema-red/40 text-white text-xs font-bold hover:bg-cinema-red/30 transition-all">
-                    <Shield className="w-3.5 h-3.5" /> ADMIN
+                  <Link to="/admin" aria-label="Painel Admin" className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-cinema-red/20 border border-cinema-red/40 text-white text-xs font-bold hover:bg-cinema-red/30 transition-all">
+                    <Shield className="w-3.5 h-3.5" /> <span className="hidden sm:inline">ADMIN</span>
                   </Link>
                 )}
                 <span className="hidden sm:flex items-center gap-2 text-white/60 text-sm bg-white/5 px-3 py-1.5 rounded-full">
