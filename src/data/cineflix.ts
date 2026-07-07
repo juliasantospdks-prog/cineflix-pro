@@ -121,22 +121,6 @@ export const plans: Plan[] = [
       'Acesso antecipado a lançamentos',
     ],
   },
-  {
-    id: 'apk',
-    name: 'APK VITALÍCIO',
-    price: 97.90,
-    period: 'único',
-    icon: '🤖',
-    discount: 'VITALÍCIO',
-    features: [
-      'Pagamento único — sem mensalidade',
-      'Compatível com Android',
-      'Sem senhas e sem travamentos',
-      'Zero anúncios',
-      'Atualizações futuras de lançamentos',
-      'Garantia de 360 dias',
-    ],
-  },
 ];
 
 export const upsells: Upsell[] = [
