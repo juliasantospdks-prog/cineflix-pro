@@ -147,14 +147,13 @@ const stripCatalogQuery = (raw: string) => {
 };
 
 const isPlanIntent = (text: string) =>
-  /\b(plano|planos|preço|preco|valor|assinar|assinatura|mensal|trimestral|anual|apk|vip|comprar|pagar)\b/i.test(text);
+  /\b(plano|planos|preço|preco|valor|assinar|assinatura|mensal|trimestral|anual|vip|comprar|pagar)\b/i.test(text);
 
 const findRequestedPlan = (text: string) => {
   const lower = text.toLowerCase();
   if (/\bmensal\b/.test(lower)) return plans.find((p) => p.id === 'mensal') || null;
   if (/\btrimestral\b|\b3\s*meses\b/.test(lower)) return plans.find((p) => p.id === 'trimestral') || null;
   if (/\banual\b|\bvip\b|\bano\b/.test(lower)) return plans.find((p) => p.id === 'anual') || null;
-  if (/\bapk\b|\bapp\b|\baplicativo\b/.test(lower)) return plans.find((p) => p.id === 'apk') || null;
   return null;
 };
 
