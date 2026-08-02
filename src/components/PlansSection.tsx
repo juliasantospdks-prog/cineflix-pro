@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ArrowLeft, Plus, Minus, User2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { plans, upsells, WHATSAPP_NUMBER, KIRVANO_LINKS } from '@/data/cineflix';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,7 @@ import planMensalIcon from '@/assets/plan-mensal-new.png';
 import planTrimestralIcon from '@/assets/plan-trimestral-new.png';
 import planAnualIcon from '@/assets/plan-anual-new.png';
 import planApkIcon from '@/assets/plan-apk-icon.png';
+
 
 interface PlansSectionProps {
   onOpenChatWithPlan?: (message?: string) => void;
