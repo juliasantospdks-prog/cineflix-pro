@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { TMDBMovie } from '@/hooks/useTMDB';
 import TMDBMovieCard from './TMDBMovieCard';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue } from 'framer-motion';
 
 interface TMDBGalleryProps {
   title: string;
@@ -14,6 +14,7 @@ interface TMDBGalleryProps {
 
 const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -21,6 +22,7 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
       scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   };
+
 
   if (isLoading) {
     return (
