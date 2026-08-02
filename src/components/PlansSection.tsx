@@ -120,11 +120,44 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.15, delayChildren: 0.1 },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 50, scale: 0.95 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: { duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] as const },
+    },
+  };
+
+  const headerVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] as const },
+    },
+  };
+
   return (
     <section id="planos" className="py-20 px-4 bg-gradient-to-b from-cinema-dark via-cinema-dark/95 to-cinema-dark">
       <div className="container mx-auto max-w-6xl">
         {/* Header */}
-        <div className="text-center mb-16">
+        <motion.div 
+          className="text-center mb-16"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-80px' }}
+          variants={headerVariants}
+        >
           <span className="inline-block px-4 py-2 bg-cinema-red/20 text-cinema-red rounded-full text-sm font-bold mb-4">
             PLANOS EXCLUSIVOS
           </span>
@@ -135,7 +168,8 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
             Acesso ilimitado a milhares de filmes, séries, animes e muito mais. 
             Cancele quando quiser.
           </p>
-        </div>
+        </motion.div>
+
 
         {/* Upsells Section - Shows after plan selection */}
         {showUpsells && selectedPlan && (
