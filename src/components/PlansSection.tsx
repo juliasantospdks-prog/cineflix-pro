@@ -172,119 +172,139 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
 
 
         {/* Upsells Section - Shows after plan selection */}
-        {showUpsells && selectedPlan && (
-          <div className="mb-12 animate-fade-in">
-            {/* Back button */}
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 text-white/70 hover:text-white mb-6 transition-colors"
+        <AnimatePresence mode="wait">
+          {showUpsells && selectedPlan && (
+            <motion.div 
+              className="mb-12"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Voltar aos planos
-            </button>
+              {/* Back button */}
+              <motion.button
+                onClick={handleBack}
+                className="flex items-center gap-2 text-white/70 hover:text-white mb-6 transition-colors"
+                whileHover={{ x: -4 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Voltar aos planos
+              </motion.button>
 
-            {/* Selected Plan Summary */}
-            <div className="bg-cinema-panel border border-cinema-red/30 rounded-2xl p-6 mb-8">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden">
-                    <img 
-                      src={getIcon(selectedPlan.id)} 
-                      alt={selectedPlan.name} 
-                      className="w-16 h-16 object-contain"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">{selectedPlan.name}</h3>
-                    <p className="text-cinema-red font-bold">R$ {selectedPlan.price.toFixed(2)} {selectedPlan.period}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-white/60 text-sm">Plano selecionado</span>
-                  <div className="text-green-500 flex items-center gap-1">
-                    <Check className="w-4 h-4" />
-                    <span className="text-sm">Confirmado</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Upsells Grid */}
-            <div className="mb-8">
-              <h3 className="text-2xl font-bold text-white mb-2">🎁 Ofertas Exclusivas</h3>
-              <p className="text-white/60 mb-6">Adicione extras ao seu plano com desconto especial!</p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {upsells.map((upsell) => {
-                  const isSelected = selectedUpsells.includes(upsell.id);
-                  return (
-                    <div
-                      key={upsell.id}
-                      onClick={() => toggleUpsell(upsell.id)}
-                      className={cn(
-                        "relative rounded-xl border p-5 cursor-pointer transition-all duration-300 hover:scale-102",
-                        isSelected
-                          ? "bg-cinema-red/20 border-cinema-red shadow-glow"
-                          : "bg-cinema-panel border-white/10 hover:border-cinema-red/50"
-                      )}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <h4 className="font-bold text-white">{upsell.name}</h4>
-                        <div className={cn(
-                          "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
-                          isSelected ? "bg-cinema-red" : "bg-white/10"
-                        )}>
-                          {isSelected ? (
-                            <Minus className="w-4 h-4 text-white" />
-                          ) : (
-                            <Plus className="w-4 h-4 text-white/60" />
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-white/60 text-sm mb-3">{upsell.description}</p>
-                      <p className="text-cinema-gold font-bold">+R$ {upsell.price.toFixed(2)}</p>
+              {/* Selected Plan Summary */}
+              <div className="bg-cinema-panel border border-cinema-red/30 rounded-2xl p-6 mb-8">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden">
+                      <img 
+                        src={getIcon(selectedPlan.id)} 
+                        alt={selectedPlan.name} 
+                        className="w-16 h-16 object-contain"
+                      />
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Total and Checkout */}
-            <div className="bg-gradient-to-r from-cinema-red/20 to-cinema-panel border border-cinema-red/30 rounded-2xl p-6">
-              <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
-                <div>
-                  <span className="text-white/60">Total a pagar:</span>
-                  <div className="text-3xl font-bold text-white">
-                    R$ {calculateTotal().toFixed(2)}
+                    <div>
+                      <h3 className="text-xl font-bold text-white">{selectedPlan.name}</h3>
+                      <p className="text-cinema-red font-bold">R$ {selectedPlan.price.toFixed(2)} {selectedPlan.period}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-white/60 text-sm">Plano selecionado</span>
+                    <div className="text-green-500 flex items-center gap-1">
+                      <Check className="w-4 h-4" />
+                      <span className="text-sm">Confirmado</span>
+                    </div>
                   </div>
                 </div>
-                {selectedUpsells.length > 0 && (
-                  <div className="text-cinema-gold text-sm">
-                    ✨ {selectedUpsells.length} extra(s) adicionado(s)
+              </div>
+
+              {/* Upsells Grid */}
+              <div className="mb-8">
+                <h3 className="text-2xl font-bold text-white mb-2">🎁 Ofertas Exclusivas</h3>
+                <p className="text-white/60 mb-6">Adicione extras ao seu plano com desconto especial!</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {upsells.map((upsell, index) => {
+                    const isSelected = selectedUpsells.includes(upsell.id);
+                    return (
+                      <motion.div
+                        key={upsell.id}
+                        onClick={() => toggleUpsell(upsell.id)}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.08 }}
+                        whileHover={{ y: -4, scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={cn(
+                          "relative rounded-xl border p-5 cursor-pointer transition-all duration-300",
+                          isSelected
+                            ? "bg-cinema-red/20 border-cinema-red shadow-glow"
+                            : "bg-cinema-panel border-white/10 hover:border-cinema-red/50"
+                        )}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <h4 className="font-bold text-white">{upsell.name}</h4>
+                          <div className={cn(
+                            "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
+                            isSelected ? "bg-cinema-red" : "bg-white/10"
+                          )}>
+                            {isSelected ? (
+                              <Minus className="w-4 h-4 text-white" />
+                            ) : (
+                              <Plus className="w-4 h-4 text-white/60" />
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-white/60 text-sm mb-3">{upsell.description}</p>
+                        <p className="text-cinema-gold font-bold">+R$ {upsell.price.toFixed(2)}</p>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Total and Checkout */}
+              <div className="bg-gradient-to-r from-cinema-red/20 to-cinema-panel border border-cinema-red/30 rounded-2xl p-6">
+                <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+                  <div>
+                    <span className="text-white/60">Total a pagar:</span>
+                    <div className="text-3xl font-bold text-white">
+                      R$ {calculateTotal().toFixed(2)}
+                    </div>
                   </div>
-                )}
+                  {selectedUpsells.length > 0 && (
+                    <div className="text-cinema-gold text-sm">
+                      ✨ {selectedUpsells.length} extra(s) adicionado(s)
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <motion.button
+                    onClick={handleCheckout}
+                    className="flex-1 py-4 rounded-xl font-bold bg-cinema-red hover:bg-cinema-glow text-white shadow-glow hover:shadow-glow-lg transition-all duration-300"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Finalizar plano
+                  </motion.button>
+                  <motion.button
+                    onClick={() => {
+                      setSelectedUpsells([]);
+                      handleCheckout();
+                    }}
+                    className="py-4 px-6 rounded-xl font-bold bg-white/10 hover:bg-white/20 text-white transition-all duration-300"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Pular ofertas
+                  </motion.button>
+                </div>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={handleCheckout}
-                  className="flex-1 py-4 rounded-xl font-bold bg-cinema-red hover:bg-cinema-glow text-white shadow-glow hover:shadow-glow-lg transition-all duration-300"
-                >
-                  Finalizar plano
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedUpsells([]);
-                    handleCheckout();
-                  }}
-                  className="py-4 px-6 rounded-xl font-bold bg-white/10 hover:bg-white/20 text-white transition-all duration-300"
-                >
-                  Pular ofertas
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
 
         {/* Plans Grid - Hidden when showing upsells */}
         {!showUpsells && (
