@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ArrowLeft, Plus, Minus, User2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { plans, upsells, WHATSAPP_NUMBER, KIRVANO_LINKS } from '@/data/cineflix';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,7 @@ import planMensalIcon from '@/assets/plan-mensal-new.png';
 import planTrimestralIcon from '@/assets/plan-trimestral-new.png';
 import planAnualIcon from '@/assets/plan-anual-new.png';
 import planApkIcon from '@/assets/plan-apk-icon.png';
+
 
 interface PlansSectionProps {
   onOpenChatWithPlan?: (message?: string) => void;
@@ -118,11 +120,44 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.15, delayChildren: 0.1 },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 50, scale: 0.95 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: { duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] as const },
+    },
+  };
+
+  const headerVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] as const },
+    },
+  };
+
   return (
     <section id="planos" className="py-20 px-4 bg-gradient-to-b from-cinema-dark via-cinema-dark/95 to-cinema-dark">
       <div className="container mx-auto max-w-6xl">
         {/* Header */}
-        <div className="text-center mb-16">
+        <motion.div 
+          className="text-center mb-16"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-80px' }}
+          variants={headerVariants}
+        >
           <span className="inline-block px-4 py-2 bg-cinema-red/20 text-cinema-red rounded-full text-sm font-bold mb-4">
             PLANOS EXCLUSIVOS
           </span>
@@ -133,132 +168,171 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
             Acesso ilimitado a milhares de filmes, séries, animes e muito mais. 
             Cancele quando quiser.
           </p>
-        </div>
+        </motion.div>
+
 
         {/* Upsells Section - Shows after plan selection */}
-        {showUpsells && selectedPlan && (
-          <div className="mb-12 animate-fade-in">
-            {/* Back button */}
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 text-white/70 hover:text-white mb-6 transition-colors"
+        <AnimatePresence mode="wait">
+          {showUpsells && selectedPlan && (
+            <motion.div 
+              className="mb-12"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Voltar aos planos
-            </button>
+              {/* Back button */}
+              <motion.button
+                onClick={handleBack}
+                className="flex items-center gap-2 text-white/70 hover:text-white mb-6 transition-colors"
+                whileHover={{ x: -4 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Voltar aos planos
+              </motion.button>
 
-            {/* Selected Plan Summary */}
-            <div className="bg-cinema-panel border border-cinema-red/30 rounded-2xl p-6 mb-8">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden">
-                    <img 
-                      src={getIcon(selectedPlan.id)} 
-                      alt={selectedPlan.name} 
-                      className="w-16 h-16 object-contain"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">{selectedPlan.name}</h3>
-                    <p className="text-cinema-red font-bold">R$ {selectedPlan.price.toFixed(2)} {selectedPlan.period}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-white/60 text-sm">Plano selecionado</span>
-                  <div className="text-green-500 flex items-center gap-1">
-                    <Check className="w-4 h-4" />
-                    <span className="text-sm">Confirmado</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Upsells Grid */}
-            <div className="mb-8">
-              <h3 className="text-2xl font-bold text-white mb-2">🎁 Ofertas Exclusivas</h3>
-              <p className="text-white/60 mb-6">Adicione extras ao seu plano com desconto especial!</p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {upsells.map((upsell) => {
-                  const isSelected = selectedUpsells.includes(upsell.id);
-                  return (
-                    <div
-                      key={upsell.id}
-                      onClick={() => toggleUpsell(upsell.id)}
-                      className={cn(
-                        "relative rounded-xl border p-5 cursor-pointer transition-all duration-300 hover:scale-102",
-                        isSelected
-                          ? "bg-cinema-red/20 border-cinema-red shadow-glow"
-                          : "bg-cinema-panel border-white/10 hover:border-cinema-red/50"
-                      )}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <h4 className="font-bold text-white">{upsell.name}</h4>
-                        <div className={cn(
-                          "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
-                          isSelected ? "bg-cinema-red" : "bg-white/10"
-                        )}>
-                          {isSelected ? (
-                            <Minus className="w-4 h-4 text-white" />
-                          ) : (
-                            <Plus className="w-4 h-4 text-white/60" />
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-white/60 text-sm mb-3">{upsell.description}</p>
-                      <p className="text-cinema-gold font-bold">+R$ {upsell.price.toFixed(2)}</p>
+              {/* Selected Plan Summary */}
+              <div className="bg-cinema-panel border border-cinema-red/30 rounded-2xl p-6 mb-8">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden">
+                      <img 
+                        src={getIcon(selectedPlan.id)} 
+                        alt={selectedPlan.name} 
+                        className="w-16 h-16 object-contain"
+                      />
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Total and Checkout */}
-            <div className="bg-gradient-to-r from-cinema-red/20 to-cinema-panel border border-cinema-red/30 rounded-2xl p-6">
-              <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
-                <div>
-                  <span className="text-white/60">Total a pagar:</span>
-                  <div className="text-3xl font-bold text-white">
-                    R$ {calculateTotal().toFixed(2)}
+                    <div>
+                      <h3 className="text-xl font-bold text-white">{selectedPlan.name}</h3>
+                      <p className="text-cinema-red font-bold">R$ {selectedPlan.price.toFixed(2)} {selectedPlan.period}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-white/60 text-sm">Plano selecionado</span>
+                    <div className="text-green-500 flex items-center gap-1">
+                      <Check className="w-4 h-4" />
+                      <span className="text-sm">Confirmado</span>
+                    </div>
                   </div>
                 </div>
-                {selectedUpsells.length > 0 && (
-                  <div className="text-cinema-gold text-sm">
-                    ✨ {selectedUpsells.length} extra(s) adicionado(s)
+              </div>
+
+              {/* Upsells Grid */}
+              <div className="mb-8">
+                <h3 className="text-2xl font-bold text-white mb-2">🎁 Ofertas Exclusivas</h3>
+                <p className="text-white/60 mb-6">Adicione extras ao seu plano com desconto especial!</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {upsells.map((upsell, index) => {
+                    const isSelected = selectedUpsells.includes(upsell.id);
+                    return (
+                      <motion.div
+                        key={upsell.id}
+                        onClick={() => toggleUpsell(upsell.id)}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.08 }}
+                        whileHover={{ y: -4, scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={cn(
+                          "relative rounded-xl border p-5 cursor-pointer transition-all duration-300",
+                          isSelected
+                            ? "bg-cinema-red/20 border-cinema-red shadow-glow"
+                            : "bg-cinema-panel border-white/10 hover:border-cinema-red/50"
+                        )}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <h4 className="font-bold text-white">{upsell.name}</h4>
+                          <div className={cn(
+                            "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
+                            isSelected ? "bg-cinema-red" : "bg-white/10"
+                          )}>
+                            {isSelected ? (
+                              <Minus className="w-4 h-4 text-white" />
+                            ) : (
+                              <Plus className="w-4 h-4 text-white/60" />
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-white/60 text-sm mb-3">{upsell.description}</p>
+                        <p className="text-cinema-gold font-bold">+R$ {upsell.price.toFixed(2)}</p>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Total and Checkout */}
+              <div className="bg-gradient-to-r from-cinema-red/20 to-cinema-panel border border-cinema-red/30 rounded-2xl p-6">
+                <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+                  <div>
+                    <span className="text-white/60">Total a pagar:</span>
+                    <div className="text-3xl font-bold text-white">
+                      R$ {calculateTotal().toFixed(2)}
+                    </div>
                   </div>
-                )}
+                  {selectedUpsells.length > 0 && (
+                    <div className="text-cinema-gold text-sm">
+                      ✨ {selectedUpsells.length} extra(s) adicionado(s)
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <motion.button
+                    onClick={handleCheckout}
+                    className="flex-1 py-4 rounded-xl font-bold bg-cinema-red hover:bg-cinema-glow text-white shadow-glow hover:shadow-glow-lg transition-all duration-300"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Finalizar plano
+                  </motion.button>
+                  <motion.button
+                    onClick={() => {
+                      setSelectedUpsells([]);
+                      handleCheckout();
+                    }}
+                    className="py-4 px-6 rounded-xl font-bold bg-white/10 hover:bg-white/20 text-white transition-all duration-300"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Pular ofertas
+                  </motion.button>
+                </div>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={handleCheckout}
-                  className="flex-1 py-4 rounded-xl font-bold bg-cinema-red hover:bg-cinema-glow text-white shadow-glow hover:shadow-glow-lg transition-all duration-300"
-                >
-                  Finalizar plano
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedUpsells([]);
-                    handleCheckout();
-                  }}
-                  className="py-4 px-6 rounded-xl font-bold bg-white/10 hover:bg-white/20 text-white transition-all duration-300"
-                >
-                  Pular ofertas
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
 
         {/* Plans Grid - Hidden when showing upsells */}
         {!showUpsells && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch justify-items-center max-w-6xl mx-auto">
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch justify-items-center max-w-6xl mx-auto"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-80px' }}
+          >
             {plans.map((plan) => (
-              <div
+              <motion.div
                 key={plan.id}
-                className="relative w-full max-w-sm h-full flex flex-col rounded-2xl border transition-all duration-500 hover:scale-[1.03] cursor-pointer bg-gradient-to-b from-cinema-red/20 via-cinema-panel to-cinema-dark border-cinema-red/60 hover:border-cinema-red shadow-lg hover:shadow-glow overflow-hidden group"
+                variants={itemVariants}
+                whileHover={{ 
+                  y: -12, 
+                  scale: 1.03,
+                  transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] as const }
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="relative w-full max-w-sm h-full flex flex-col rounded-2xl border transition-all duration-500 cursor-pointer bg-gradient-to-b from-cinema-red/20 via-cinema-panel to-cinema-dark border-cinema-red/60 hover:border-cinema-red shadow-lg hover:shadow-glow overflow-hidden group"
                 onClick={() => handleSelectPlan(plan)}
               >
+                {/* Animated border glow */}
+                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                  <div className="absolute inset-[-1px] rounded-2xl bg-gradient-to-r from-cinema-red via-cinema-glow to-cinema-red animate-spin-slow opacity-60" />
+                </div>
+
                 {/* Featured badge */}
                 {plan.discount && (
                   <div className="absolute top-0 left-0 right-0 z-10">
@@ -268,16 +342,20 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
                   </div>
                 )}
 
-                <div className={cn("p-6 flex flex-col flex-1 w-full", plan.discount && "pt-10")}>
+                <div className={cn("relative z-10 p-6 flex flex-col flex-1 w-full", plan.discount && "pt-10")}>
                   {/* Icon and name */}
                   <div className="flex flex-col items-center mb-5">
-                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-3 overflow-hidden">
+                    <motion.div 
+                      className="w-20 h-20 rounded-2xl flex items-center justify-center mb-3 overflow-hidden"
+                      whileHover={{ rotate: [0, -5, 5, 0], scale: 1.05 }}
+                      transition={{ duration: 0.5 }}
+                    >
                       <img 
                         src={getIcon(plan.id)} 
                         alt={plan.name} 
                         className="w-20 h-20 object-contain"
                       />
-                    </div>
+                    </motion.div>
                     <h3 className="text-base font-bold text-white text-center leading-tight">{plan.name}</h3>
                   </div>
 
@@ -309,42 +387,49 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
                   </ul>
 
                   {/* CTA Button */}
-                  <button
+                  <motion.button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSelectPlan(plan);
                     }}
                     className="w-full mt-auto py-3.5 rounded-xl text-sm font-bold transition-all duration-300 bg-cinema-red hover:bg-cinema-glow text-white shadow-glow hover:shadow-glow-lg"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.98 }}
                   >
                     {plan.id === 'apk' ? '🤖 Comprar APK' : '🎬 Assinar Agora'}
-                  </button>
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
+
 
         {/* Trust badges */}
         {!showUpsells && (
-          <div className="mt-12 flex flex-wrap justify-center gap-6 text-white/50 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              Pagamento seguro
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              Acesso imediato
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              Suporte 24/7
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              Cancele quando quiser
-            </div>
-          </div>
+          <motion.div 
+            className="mt-12 flex flex-wrap justify-center gap-6 text-white/50 text-sm"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+          >
+            {['Pagamento seguro', 'Acesso imediato', 'Suporte 24/7', 'Cancele quando quiser'].map((text, i) => (
+              <motion.div 
+                key={text} 
+                className="flex items-center gap-2"
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.5 + i * 0.1 }}
+              >
+                <span className="text-green-500">✓</span>
+                {text}
+              </motion.div>
+            ))}
+          </motion.div>
         )}
+
       </div>
       {/* Pop-up para capturar nome quando o usuário não está logado */}
       <Dialog open={askName} onOpenChange={setAskName}>

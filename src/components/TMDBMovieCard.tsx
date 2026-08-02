@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Play, Star, Plus } from 'lucide-react';
+import { Play, Star } from 'lucide-react';
 import { TMDBMovie, getTMDBImageUrl } from '@/hooks/useTMDB';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -21,14 +21,21 @@ const TMDBMovieCard = ({ movie, onPlayTrailer, index = 0 }: TMDBMovieCardProps) 
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.05 }}
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.5, delay: index * 0.04, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+      whileHover={{ 
+        y: -10, 
+        scale: 1.05,
+        transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] as const }
+      }}
+      whileTap={{ scale: 0.98 }}
       className="group relative overflow-hidden rounded-xl bg-cinema-panel border border-white/5 transition-all duration-500 hover:border-cinema-red/30 hover:shadow-glow cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => onPlayTrailer?.(movie)}
     >
+
       <div className="relative aspect-[2/3] overflow-hidden">
         <img
           src={imageError ? '/placeholder.svg' : getTMDBImageUrl(movie.poster_path, 'w500')}
@@ -85,11 +92,17 @@ const TMDBMovieCard = ({ movie, onPlayTrailer, index = 0 }: TMDBMovieCardProps) 
             <motion.p 
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
               className="text-[11px] text-white/70 line-clamp-2"
             >
               {movie.overview}
             </motion.p>
           )}
+        </div>
+
+        {/* Cinematic shine effect */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
         </div>
       </div>
     </motion.div>
@@ -97,3 +110,4 @@ const TMDBMovieCard = ({ movie, onPlayTrailer, index = 0 }: TMDBMovieCardProps) 
 };
 
 export default TMDBMovieCard;
+

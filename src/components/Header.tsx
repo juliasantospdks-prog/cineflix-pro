@@ -28,18 +28,25 @@ const Header = () => {
 
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-30 transition-all duration-500 ${
-        scrolled 
-          ? 'bg-black/95 backdrop-blur-xl border-b border-white/5 shadow-lg' 
-          : 'bg-gradient-to-b from-black/90 via-black/50 to-transparent'
-      }`}>
+      <motion.header 
+        className={`fixed top-0 left-0 right-0 z-30 transition-all duration-500 ${
+          scrolled 
+            ? 'bg-black/95 backdrop-blur-xl border-b border-white/5 shadow-lg' 
+            : 'bg-gradient-to-b from-black/90 via-black/50 to-transparent'
+        }`}
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+      >
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 md:gap-3 group">
-            <img 
+            <motion.img 
               src={cineflixLogo} 
               alt="Logo CineflixPayment" 
               className="h-8 md:h-12 w-auto object-contain group-hover:scale-105 transition-transform"
+              whileHover={{ rotate: [0, -5, 5, 0], scale: 1.05 }}
+              transition={{ duration: 0.5 }}
             />
             <span className="font-cinema text-sm sm:text-xl md:text-2xl text-white">
               CINEFLIX<span className="text-cinema-red">PAYMENT</span>
@@ -48,15 +55,18 @@ const Header = () => {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map(link => (
-              <a 
+            {navLinks.map((link, i) => (
+              <motion.a 
                 key={link.label}
                 href={link.href} 
                 className="relative px-4 py-2 text-white/70 hover:text-white transition-colors font-medium text-sm group"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
               >
                 {link.label}
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-cinema-red group-hover:w-3/4 transition-all duration-300 rounded-full" />
-              </a>
+              </motion.a>
             ))}
           </nav>
 
@@ -108,27 +118,30 @@ const Header = () => {
             </button>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Mobile Nav Overlay */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="fixed inset-x-0 top-[56px] z-30 bg-black/95 backdrop-blur-xl border-b border-white/10 md:hidden"
+            initial={{ opacity: 0, y: -10, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -10, height: 0 }}
+            className="fixed inset-x-0 top-[56px] z-30 bg-black/95 backdrop-blur-xl border-b border-white/10 md:hidden overflow-hidden"
           >
             <nav className="flex flex-col p-4 gap-1">
-              {navLinks.map(link => (
-                <a
+              {navLinks.map((link, i) => (
+                <motion.a
                   key={link.label}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
                   className="px-4 py-3 text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-all font-medium"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
                 >
                   {link.label}
-                </a>
+                </motion.a>
               ))}
             </nav>
           </motion.div>
@@ -139,3 +152,4 @@ const Header = () => {
 };
 
 export default Header;
+
