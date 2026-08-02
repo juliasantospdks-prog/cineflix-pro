@@ -13,10 +13,21 @@ interface HeroSectionProps {
 }
 
 const HeroSection = ({ onOpenChat, onPlayTrailer, movies }: HeroSectionProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const heroMovies = movies?.slice(0, 5) || [];
   const current = heroMovies[currentIndex];
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start start', 'end start'],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
+  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.15]);
+  const smoothY = useSpring(y, { stiffness: 100, damping: 30, restDelta: 0.001 });
+  const smoothScale = useSpring(scale, { stiffness: 100, damping: 30, restDelta: 0.001 });
 
   const goNext = useCallback(() => {
     if (heroMovies.length === 0) return;
@@ -39,10 +50,39 @@ const HeroSection = ({ onOpenChat, onPlayTrailer, movies }: HeroSectionProps) =>
 
 
   const slideVariants = {
-    enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0 }),
+    enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0, scale: 1.05 }),
+    center: { x: 0, opacity: 1, scale: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0, scale: 1.05 }),
   };
+
+  const textContainerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.12, delayChildren: 0.1 },
+    },
+    exit: {
+      opacity: 0,
+      transition: { duration: 0.3 },
+    },
+  };
+
+  const textItemVariants = {
+    hidden: { opacity: 0, y: 40, filter: 'blur(10px)' },
+    visible: {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      transition: { duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] },
+    },
+  };
+
+  const buttonHoverVariants = {
+    rest: { scale: 1 },
+    hover: { scale: 1.03, transition: { duration: 0.3 } },
+    tap: { scale: 0.98 },
+  };
+
 
   if (!current) {
     // Fallback static hero
