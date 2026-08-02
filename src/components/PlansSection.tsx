@@ -308,13 +308,31 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
 
         {/* Plans Grid - Hidden when showing upsells */}
         {!showUpsells && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch justify-items-center max-w-6xl mx-auto">
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch justify-items-center max-w-6xl mx-auto"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-80px' }}
+          >
             {plans.map((plan) => (
-              <div
+              <motion.div
                 key={plan.id}
-                className="relative w-full max-w-sm h-full flex flex-col rounded-2xl border transition-all duration-500 hover:scale-[1.03] cursor-pointer bg-gradient-to-b from-cinema-red/20 via-cinema-panel to-cinema-dark border-cinema-red/60 hover:border-cinema-red shadow-lg hover:shadow-glow overflow-hidden group"
+                variants={itemVariants}
+                whileHover={{ 
+                  y: -12, 
+                  scale: 1.03,
+                  transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] as const }
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="relative w-full max-w-sm h-full flex flex-col rounded-2xl border transition-all duration-500 cursor-pointer bg-gradient-to-b from-cinema-red/20 via-cinema-panel to-cinema-dark border-cinema-red/60 hover:border-cinema-red shadow-lg hover:shadow-glow overflow-hidden group"
                 onClick={() => handleSelectPlan(plan)}
               >
+                {/* Animated border glow */}
+                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                  <div className="absolute inset-[-1px] rounded-2xl bg-gradient-to-r from-cinema-red via-cinema-glow to-cinema-red animate-spin-slow opacity-60" />
+                </div>
+
                 {/* Featured badge */}
                 {plan.discount && (
                   <div className="absolute top-0 left-0 right-0 z-10">
@@ -324,16 +342,20 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
                   </div>
                 )}
 
-                <div className={cn("p-6 flex flex-col flex-1 w-full", plan.discount && "pt-10")}>
+                <div className={cn("relative z-10 p-6 flex flex-col flex-1 w-full", plan.discount && "pt-10")}>
                   {/* Icon and name */}
                   <div className="flex flex-col items-center mb-5">
-                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-3 overflow-hidden">
+                    <motion.div 
+                      className="w-20 h-20 rounded-2xl flex items-center justify-center mb-3 overflow-hidden"
+                      whileHover={{ rotate: [0, -5, 5, 0], scale: 1.05 }}
+                      transition={{ duration: 0.5 }}
+                    >
                       <img 
                         src={getIcon(plan.id)} 
                         alt={plan.name} 
                         className="w-20 h-20 object-contain"
                       />
-                    </div>
+                    </motion.div>
                     <h3 className="text-base font-bold text-white text-center leading-tight">{plan.name}</h3>
                   </div>
 
@@ -365,20 +387,23 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
                   </ul>
 
                   {/* CTA Button */}
-                  <button
+                  <motion.button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSelectPlan(plan);
                     }}
                     className="w-full mt-auto py-3.5 rounded-xl text-sm font-bold transition-all duration-300 bg-cinema-red hover:bg-cinema-glow text-white shadow-glow hover:shadow-glow-lg"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.98 }}
                   >
                     {plan.id === 'apk' ? '🤖 Comprar APK' : '🎬 Assinar Agora'}
-                  </button>
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
+
 
         {/* Trust badges */}
         {!showUpsells && (
