@@ -53,13 +53,19 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
     <motion.section 
       id={sectionId} 
       className="py-4 md:py-6 relative group/gallery"
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.5 }}
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] as const }}
     >
       <div className="flex items-center justify-between mb-4 px-4 md:px-8">
-        <div className="flex items-center gap-3">
+        <motion.div 
+          className="flex items-center gap-3"
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+        >
           <div className="w-1 h-6 bg-cinema-red rounded-full" />
           <h2 className="text-lg md:text-2xl font-bold text-white">
             {title}
@@ -67,7 +73,7 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
           <span className="hidden md:inline text-xs text-white/40 bg-white/5 px-2 py-1 rounded-full">
             {movies.length} títulos
           </span>
-        </div>
+        </motion.div>
         <div className="flex gap-1.5">
           <Button
             variant="ghost"
@@ -90,19 +96,28 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
         </div>
       </div>
 
-      <div
+      <motion.div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide px-4 md:px-8 pb-4 snap-x snap-mandatory"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        className="flex gap-3 overflow-x-auto scrollbar-hide px-4 md:px-8 pb-4 snap-x snap-mandatory cursor-grab active:cursor-grabbing"
+        style={{ x, scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.1}
+        onDrag={(event, info) => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollLeft = scrollRef.current.scrollLeft - info.delta.x;
+          }
+        }}
       >
         {movies.map((movie, i) => (
           <div key={movie.id} className="flex-shrink-0 w-[140px] md:w-[200px] snap-start">
             <TMDBMovieCard movie={movie} onPlayTrailer={onPlayTrailer} index={i} />
           </div>
         ))}
-      </div>
+      </motion.div>
     </motion.section>
   );
 };
 
 export default TMDBGallery;
+
