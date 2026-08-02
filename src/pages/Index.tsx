@@ -9,6 +9,7 @@ import TMDBGallery from '@/components/TMDBGallery';
 import TMDBTrailerModal from '@/components/TMDBTrailerModal';
 import SocialProof from '@/components/SocialProof';
 import PlansSection from '@/components/PlansSection';
+import AnimatedSection from '@/components/AnimatedSection';
 
 import Footer from '@/components/Footer';
 import ChatFAB from '@/components/ChatFAB';
@@ -24,6 +25,7 @@ import {
   useRomanceMovies,
   TMDBMovie 
 } from '@/hooks/useTMDB';
+
 
 const Index = () => {
   const { user } = useAuth();
