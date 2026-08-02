@@ -99,7 +99,7 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
       <motion.div
         ref={scrollRef}
         className="flex gap-3 overflow-x-auto scrollbar-hide px-4 md:px-8 pb-4 snap-x snap-mandatory cursor-grab active:cursor-grabbing"
-        style={{ x, scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.1}
@@ -115,6 +115,7 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
           </div>
         ))}
       </motion.div>
+
     </motion.section>
   );
 };
