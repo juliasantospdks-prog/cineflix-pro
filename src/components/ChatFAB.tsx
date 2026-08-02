@@ -37,8 +37,18 @@ const ChatFAB = ({ onClick }: ChatFABProps) => {
         className="w-16 h-16 rounded-full bg-gradient-to-r from-cinema-red to-cinema-glow flex items-center justify-center shadow-button group relative overflow-hidden ring-2 ring-white/30"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        animate={{ boxShadow: ['0 0 20px hsl(357 91% 47% / 0.4)', '0 0 35px hsl(357 91% 47% / 0.6)', '0 0 20px hsl(357 91% 47% / 0.4)'] }}
-        transition={{ boxShadow: { duration: 2, repeat: Infinity } }}
+        animate={{ 
+          y: [0, -8, 0],
+          boxShadow: [
+            '0 0 20px hsl(357 91% 47% / 0.4)', 
+            '0 0 35px hsl(357 91% 47% / 0.6)', 
+            '0 0 20px hsl(357 91% 47% / 0.4)'
+          ]
+        }}
+        transition={{ 
+          y: { duration: 3, repeat: Infinity, ease: 'easeInOut' },
+          boxShadow: { duration: 2, repeat: Infinity }
+        }}
         aria-label="Abrir chat com Ashley"
       >
         <img
@@ -48,7 +58,7 @@ const ChatFAB = ({ onClick }: ChatFABProps) => {
         />
 
         {/* Notification badge */}
-        <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-cinema-red text-xs font-bold rounded-full flex items-center justify-center shadow-sm">
+        <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-cinema-red text-xs font-bold rounded-full flex items-center justify-center shadow-sm animate-bounce-subtle">
           1
         </span>
       </motion.button>
@@ -57,3 +67,4 @@ const ChatFAB = ({ onClick }: ChatFABProps) => {
 };
 
 export default ChatFAB;
+
