@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Play, Star, ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Play, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 import { TMDBMovie, getTMDBImageUrl } from '@/hooks/useTMDB';
 import cineflixLogo from '@/assets/cineflix-logo.png';
+
 
 interface HeroSectionProps {
   onOpenChat: () => void;
