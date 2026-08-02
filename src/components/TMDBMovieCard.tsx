@@ -92,11 +92,17 @@ const TMDBMovieCard = ({ movie, onPlayTrailer, index = 0 }: TMDBMovieCardProps) 
             <motion.p 
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
               className="text-[11px] text-white/70 line-clamp-2"
             >
               {movie.overview}
             </motion.p>
           )}
+        </div>
+
+        {/* Cinematic shine effect */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
         </div>
       </div>
     </motion.div>
@@ -104,3 +110,4 @@ const TMDBMovieCard = ({ movie, onPlayTrailer, index = 0 }: TMDBMovieCardProps) 
 };
 
 export default TMDBMovieCard;
+
