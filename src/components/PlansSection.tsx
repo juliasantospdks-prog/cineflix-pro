@@ -407,25 +407,29 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
 
         {/* Trust badges */}
         {!showUpsells && (
-          <div className="mt-12 flex flex-wrap justify-center gap-6 text-white/50 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              Pagamento seguro
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              Acesso imediato
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              Suporte 24/7
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-green-500">✓</span>
-              Cancele quando quiser
-            </div>
-          </div>
+          <motion.div 
+            className="mt-12 flex flex-wrap justify-center gap-6 text-white/50 text-sm"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+          >
+            {['Pagamento seguro', 'Acesso imediato', 'Suporte 24/7', 'Cancele quando quiser'].map((text, i) => (
+              <motion.div 
+                key={text} 
+                className="flex items-center gap-2"
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.5 + i * 0.1 }}
+              >
+                <span className="text-green-500">✓</span>
+                {text}
+              </motion.div>
+            ))}
+          </motion.div>
         )}
+
       </div>
       {/* Pop-up para capturar nome quando o usuário não está logado */}
       <Dialog open={askName} onOpenChange={setAskName}>
