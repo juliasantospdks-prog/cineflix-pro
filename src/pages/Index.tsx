@@ -96,36 +96,38 @@ const Index = () => {
           
           {/* Upsell CTA */}
           {(
-            <motion.div 
-              className="px-4 md:px-8 py-6"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
+            <AnimatedSection className="px-4 md:px-8 py-6" delay={0.2}>
               <div className="bg-gradient-to-r from-cinema-red/10 via-cinema-panel to-cinema-red/10 border border-cinema-red/20 rounded-2xl p-6 md:p-8 text-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cinema-red/5 to-transparent animate-shimmer" />
                 <div className="relative z-10">
                   <p className="text-xl md:text-2xl font-bold text-white mb-2">🔥 Quer assistir tudo sem limites?</p>
                   <p className="text-white/50 text-sm mb-5">Conheça nossos planos a partir de R$ 29,90/mês</p>
-                  <button
+                  <motion.button
                     onClick={() => openChatWithMessage('Quero conhecer os planos disponíveis')}
-                    className="inline-block px-8 py-3.5 rounded-xl font-bold bg-cinema-red hover:bg-cinema-glow text-white transition-all duration-300 hover:scale-105 shadow-button"
+                    className="inline-block px-8 py-3.5 rounded-xl font-bold bg-cinema-red hover:bg-cinema-glow text-white transition-all duration-300 shadow-button"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
                   >
                     Ver Planos
-                  </button>
+                  </motion.button>
                 </div>
               </div>
-            </motion.div>
+            </AnimatedSection>
           )}
         </div>
 
         {/* Social proof */}
-        <SocialProof />
+        <AnimatedSection>
+          <SocialProof />
+        </AnimatedSection>
 
         {/* Sales page 2026 */}
-        <SalesPage2026 />
+        <AnimatedSection delay={0.2}>
+          <SalesPage2026 />
+        </AnimatedSection>
 
       </main>
+
       <Footer />
       <ChatFAB onClick={() => openChatWithMessage()} />
       <AshleyChat isOpen={isChatOpen} onClose={handleCloseChat} initialMessage={chatInitialMessage} />
