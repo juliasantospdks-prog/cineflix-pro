@@ -717,14 +717,14 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       .map((id) => upsells.find((u) => u.id === id))
       .filter((u): u is Upsell => !!u);
 
-    addBotText(`Perfeito, ${userName || 'meu bem'}! Já tô gerando seu comprovante... ✨`);
-    addBotAudio('Prontinho! Seu comprovante tá aí 👇', ashleyComprovante.url);
+    addBotText(`Fechado, ${userName || 'meu bem'}. Estou gerando seu comprovante agora.`);
+    addBotAudio('Prontinho, seu comprovante está aqui embaixo.', ashleyComprovante.url);
     addReceiptCard({
       userName: userName || 'Cliente',
       plan: selectedPlan,
       upsells: chosenUpsells,
     });
-    addBotText('Baixa o PDF ou envia direto no WhatsApp — o que ficar melhor pra você 💖');
+    addBotText('Baixa o PDF ou manda direto no WhatsApp, como preferir.');
   };
 
   const handleClose = () => onClose();
