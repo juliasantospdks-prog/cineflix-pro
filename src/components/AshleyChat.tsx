@@ -239,6 +239,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const processingQueueRef = useRef(false);
   const hasStartedRef = useRef(false);
   const isMountedRef = useRef(true);
+  const presentPlanAtRef = useRef<((index: number) => Promise<void>) | null>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
