@@ -525,8 +525,8 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         LOG('session.returning — skipping greeting', { name, gender: session.userGender });
         addBotText(
           name
-            ? `Oi de novo, ${name}! 💖 Bom te ver por aqui. Me diz o que você quer assistir ou qual plano quer conhecer.`
-            : 'Oi de novo! 💖 Bom te ver por aqui. Me diz o que você quer assistir ou qual plano quer conhecer.'
+            ? `Oi de novo, ${name}. Me diz o título que você quer assistir hoje que eu libero na hora.`
+            : 'Oi de novo. Me diz o título que você quer assistir hoje que eu libero na hora.'
         );
         setStep(name ? 'freeChat' : 'name');
         return;
