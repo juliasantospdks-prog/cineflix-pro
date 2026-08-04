@@ -690,8 +690,8 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     if (isAiLoading) return;
     setSelectedPlan(plan);
     addUserMessage(`Quero o ${plan.name}`);
-    addBotText(`Excelente escolha, ${userName || 'meu bem'}! O ${plan.name} é perfeito pra você 🎉`);
-    addBotAudio('Antes de finalizar, dá uma olhadinha nos adicionais 👇', ashleyUpsell.url);
+    addBotText(`Boa escolha, ${userName || 'meu bem'}. O ${plan.name} entra ativo hoje mesmo.`);
+    addBotAudio('Antes de finalizar, dá uma olhada nos adicionais.', ashleyUpsell.url);
     setStep('upsell');
   };
 
