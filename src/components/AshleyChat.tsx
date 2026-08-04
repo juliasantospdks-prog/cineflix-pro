@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ChatMessage, Plan, Upsell } from '@/types';
 import { plans, upsells } from '@/data/cineflix';
 import { cn } from '@/lib/utils';
+import { sanitizeAshleyText } from '@/lib/sanitizeText';
 import { supabase } from '@/integrations/supabase/client';
 import ashleyAvatar from '@/assets/ashley-avatar.png.asset.json';
 import ashleyGreeting from '@/assets/ashley-greeting.mp3.asset.json';
