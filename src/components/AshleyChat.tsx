@@ -178,40 +178,10 @@ type QueueItem =
 
 const getMovieTitle = (movie: TMDBMovie) => movie.title || movie.name || 'esse título';
 
-const stripCatalogQuery = (raw: string) => {
-  const cleaned = raw
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\b(voces|voce|vc|tem|têm|possui|possue|passa|assistir|assisti|ver|quero|queria|procura|procurar|buscar|busca|filme|serie|series|anime|desenho|catalogo|disponivel|na cineflix|no catalogo|ai|aí|por favor|pfv)\b/g, ' ')
-    .replace(/[?!.,;:()"']/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return cleaned || raw.trim();
-};
+// Intent detection, title resolution and next step are decided by the AI
+// in the ashley-chat edge function — no keyword guessing on the client.
 
-const isPlanIntent = (text: string) =>
-  /\b(plano|planos|preço|preco|valor|assinar|assinatura|mensal|trimestral|anual|vip|comprar|pagar)\b/i.test(text);
 
-const findRequestedPlan = (text: string) => {
-  const lower = text.toLowerCase();
-  if (/\bmensal\b/.test(lower)) return plans.find((p) => p.id === 'mensal') || null;
-  if (/\btrimestral\b|\b3\s*meses\b/.test(lower)) return plans.find((p) => p.id === 'trimestral') || null;
-  if (/\banual\b|\bvip\b|\bano\b/.test(lower)) return plans.find((p) => p.id === 'anual') || null;
-  return null;
-};
-
-const looksLikeCatalogIntent = (text: string, currentStep: ChatStep) => {
-  if (isPlanIntent(text)) return false;
-  if (/\b(filme|série|serie|anime|doramas?|k-drama|catálogo|catalogo|assistir|tem|têm|disponível|disponivel|passa|procura|buscar|desenho)\b/i.test(text)) {
-    return true;
-  }
-  const generic = /^(oi|olá|ola|bom dia|boa tarde|boa noite|sim|não|nao|ok|beleza|obrigado|obrigada|valeu)$/i;
-  return (currentStep === 'recommendations' || currentStep === 'freeChat' || currentStep === 'plans') &&
-    text.trim().length >= 3 &&
-    text.trim().length <= 70 &&
-    !generic.test(text.trim());
-};
 
 const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
