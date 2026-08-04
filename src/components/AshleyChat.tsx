@@ -665,15 +665,15 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     const carinho = gender === 'male' ? 'querido' : 'querida';
     const intro =
       gender === 'male'
-        ? `Show, ${carinho}! Olha o catálogo que separei pra você 🔥`
-        : `Perfeito, ${carinho}! Preparei o conteúdo ideal pra você 💖`;
+        ? `Fechado, ${carinho}. Separei o que mais roda aqui pro seu perfil.`
+        : `Perfeito, ${carinho}. Separei o que mais roda aqui pro seu perfil.`;
     addBotText(intro);
     const recs =
       gender === 'male'
-        ? 'Filmes de ação, futebol ao vivo com Champions e Libertadores, Marvel, DC, e toda a saga Velozes e Furiosos em 4K! 🎬'
-        : 'Os K-Dramas mais assistidos, séries românticas, reality shows, e as novelas turcas que todo mundo ama! 💕';
+        ? 'Ação, futebol ao vivo com Champions e Libertadores, Marvel, DC e as sagas completas em 4K, tudo sem anúncio.'
+        : 'K-dramas do momento, séries de romance, reality shows e as novelas turcas completas, tudo dublado e legendado.';
     addBotText(recs);
-    addBotText('Agora deixa eu te apresentar nossos planos, um por um 👇');
+    addBotText('Agora te mostro o plano que mais faz sentido, começando pelo mais barato.');
     setStep('plans');
     await presentPlanAt(0);
   };
