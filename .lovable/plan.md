@@ -1,96 +1,45 @@
+# Ashley com IA de verdade + site animado com copy de venda
 
-## O que muda
+O problema central: hoje o chat decide o que fazer com expressões regulares (listas de palavras). Isso quebra quando o usuário fala "vc tem Round 6", "queria ver aquele do Vin Diesel", "boa noite, tem esse tal de Duna 2". Resultado: ela responde que não tem, mesmo tendo. Além disso o texto está com emoji em excesso e caracteres quebrados, e várias seções da página ainda são estáticas.
 
-### 1. Voz customizada (ElevenLabs Voice Design)
+## 1. Cérebro do chat: IA decide, não regex
 
-Vou usar o endpoint `text-to-voice/create-previews` da ElevenLabs pra criar uma voz permanente com prompt em inglês descritivo:
+Trocar a decisão por palavra-chave por uma **camada de raciocínio na IA**, na Edge Function `ashley-chat`:
 
-> "Young Brazilian woman, 19 years old, from Maranhão (Northeast Brazil), sweet warm tone, natural conversational speech, friendly customer support voice, subtle Northeast accent, empathetic"
+- A IA passa a receber a mensagem + histórico + estado atual e retorna, em formato estruturado, sua decisão: qual a intenção (título de catálogo, plano, dúvida, objeção, conversa solta), qual o título extraído (quando houver, já normalizado — "aquele do Vin Diesel" -> "Velozes e Furiosos"), qual a resposta em texto e qual o próximo passo do fluxo.
+- O front deixa de adivinhar: ele apenas executa o que a IA decidiu (buscar no catálogo, apresentar plano, mandar comprovante, seguir conversando).
+- Modelo com raciocínio real e resposta rápida, chamado por streaming para não estourar tempo.
 
-Gero 3 previews, escolho o melhor, salvo como voz permanente e uso o `voice_id` dela pra gravar **todos os áudios pré-gravados** do funil (10 clipes ao invés de 3):
+Ganho prático: qualquer forma de perguntar por um filme é entendida, inclusive com erro de digitação, apelido, nome em inglês ou frase enrolada.
 
-- `greeting.mp3` — saudação inicial
-- `querido.mp3` / `querida.mp3` — reação ao nome
-- `pitch-mensal.mp3` / `pitch-trimestral.mp3` / `pitch-anual.mp3` / `pitch-apk.mp3` — apresentação de cada plano
-- `comparacao.mp3` — "compara aí com Netflix, Prime, HBO…"
-- `upsell.mp3` — oferta de adicionais
-- `comprovante.mp3` — narração dos dados de acesso
+## 2. Busca de catálogo que não erra mais
 
-Modelo `eleven_multilingual_v2`, stability 0.4, similarity_boost 0.85, style 0.55, speaker_boost on — perfil de conversa natural, não robótico. Todos texto em pt-BR.
+- A busca no TMDB passa a usar o título limpo pela IA, não o texto cru sem palavras removidas.
+- Cascata de tentativas: busca em português, depois em inglês, depois busca por pessoa (ator/diretor) e por termo aproximado.
+- Só diz "não achei" depois de todas as tentativas falharem — e mesmo nesse caso oferece 3 sugestões parecidas em vez de encerrar.
+- Quando encontra, mostra pôster, ano, nota e um gancho de venda ("está no catálogo, libero seu acesso hoje").
 
-### 2. Bolhas WhatsApp-style dentro do chat
+## 3. Limpeza de texto e emoji
 
-Reestruturo a área de mensagens (o modal externo continua no visual CineflixPayment — dark + vermelho):
+- Sanitizador único aplicado a tudo que a Ashley escreve: no máximo 1 emoji por mensagem, remoção de markdown, de caracteres de controle e de qualquer sequência quebrada (mojibake).
+- Revisão das mensagens fixas do fluxo para tom de vendedora humana, sem enfeite.
 
-- **Fundo do chat**: textura sutil WhatsApp-dark (grafite com padrão pontilhado esmaecido)
-- **Bolha da Ashley** (recebida): cinza-grafite `#1F2C34`, cauda no canto inferior esquerdo, timestamp cinza + avatar circular
-- **Bolha do usuário** (enviada): verde WhatsApp adaptado ao tema (`#005C4B` com sombra), cauda direita, dois ✓✓ azuis
-- **Bolha de áudio**: play/pause redondo grande, **waveform animado real** (barras que pulsam durante playback), tempo decorrido "0:07 / 0:23", velocidade 1x/1.5x/2x, indicador "áudio não ouvido" (bolinha azul)
-- Animação de entrada tipo WhatsApp (slide+fade)
-- Data separator "HOJE" no topo
+## 4. Copy de venda
 
-### 3. Planos com áudio + comparação com concorrentes
+- Reescrita das mensagens do funil (saudação, apresentação do mensal, subida para trimestral/anual, quebra de objeção, fechamento) com estrutura de venda: dor, prova, oferta, urgência real, chamada única.
+- Mesma reescrita nas seções da página: hero, planos, prova social e bloco de fechamento — foco em benefício concreto, não em adjetivo.
 
-Cada plano vira uma sequência dentro do chat:
-1. Ashley manda **áudio pré-gravado** com o pitch do plano
-2. Aparece o **card do plano** (mantém visual atual, com micro-melhorias)
-3. Aparece um **card comparativo** logo abaixo mostrando:
+## 5. Animação de ponta a ponta
 
-```
-   COMPARE COM O QUE VOCÊ JÁ PAGA:
-   Netflix Premium ......... R$ 59,90/mês
-   Amazon Prime ............ R$ 19,90/mês
-   HBO Max ................. R$ 34,90/mês
-   Globoplay ............... R$ 29,90/mês
-   Disney+ ................. R$ 33,90/mês
-   ─────────────────────────────────────
-   TOTAL SEPARADO .......... R$ 178,50/mês
-   
-   ✨ CineflixPayment ...... R$ 29,90/mês
-   TUDO JUNTO + futebol + APK
-   VOCÊ ECONOMIZA R$ 148,60/mês
-```
-
-Card com gradiente cinema, animação de contagem no "economiza", ícone de cada concorrente esmaecido.
-
-### 4. Comprovante 100% dentro do chat
-
-Removo a navegação pra `/comprovante`. No lugar:
-
-1. Ashley manda áudio "aqui está seu comprovante, querido/querida"
-2. **Card de comprovante inline** no chat (bolha especial larga):
-   - Header CineflixPayment com logo
-   - Nº do pedido, nome, plano, adicionais, total pago
-   - Dados de acesso (usuário/senha/servidor gerados)
-   - QR code do app
-3. Dois botões abaixo do card:
-   - **📄 Baixar PDF** — gera PDF client-side com jsPDF (já instalado) + html2canvas
-   - **💬 Enviar no WhatsApp** — abre `wa.me/?text=` com mensagem pronta ("Olá! Aqui está meu comprovante CineflixPayment nº XXX…")
-4. Ashley manda mensagem final "Qualquer coisa, é só chamar aqui 💖"
-
-O usuário nunca sai do chat.
-
-## Arquivos que serão tocados
-
-- `src/components/AshleyChat.tsx` — refatorado (bolhas, áudio-player, receipt inline)
-- `src/components/AshleyAudioBubble.tsx` — novo (waveform + play)
-- `src/components/ChatReceiptCard.tsx` — novo (card + botões PDF/WA)
-- `src/components/PlanComparisonCard.tsx` — novo (tabela concorrentes)
-- `src/assets/ashley-*.mp3.asset.json` — 10 novos áudios (regeneração completa)
-- `src/index.css` — tokens do WhatsApp-style (fundo, bolhas)
-
-## Ordem de execução
-
-1. Gerar voz customizada via API ElevenLabs (Voice Design)
-2. Gerar os 10 áudios com a nova voz e subir como assets CDN
-3. Construir componentes novos (AudioBubble, ComparisonCard, ReceiptCard)
-4. Refatorar AshleyChat integrando tudo
-5. Testar fluxo completo com Playwright
+- Padronizar a entrada animada em **todas** as seções (inclusive as que ficaram de fora: prova social, FAQ, rodapé, bloco de fechamento).
+- Transições de estado no chat: bolha entrando, indicador de digitação, card de plano e de comprovante com entrada própria.
+- Micro-interações nos botões de compra e nos cards de catálogo.
+- Respeito a `prefers-reduced-motion`.
 
 ## Detalhes técnicos
 
-- Voice Design: `POST /v1/text-to-voice/create-previews` → escolher preview → `POST /v1/text-to-voice/create-voice-from-preview` retorna `voice_id` permanente
-- Áudios pré-gravados = zero custo em runtime (só CDN)
-- PDF gerado 100% no cliente (jsPDF já está no bundle)
-- WhatsApp via `wa.me/?text=` (sem API externa)
-- Waveform: 32 barras que animam com `requestAnimationFrame` sincronizado ao `<audio>` currentTime
+- `supabase/functions/ashley-chat/index.ts`: virar roteador de intenção com saída estruturada (schema estrito) + resposta de texto; manter chave no servidor; tratar 429/402 com mensagem clara na UI.
+- `src/components/AshleyChat.tsx`: remover `looksLikeCatalogIntent`, `isPlanIntent`, `stripCatalogQuery` e `findRequestedPlan` como fonte de decisão; passar a consumir a decisão da IA na máquina de estados/fila já existente.
+- `supabase/functions/tmdb/index.ts`: novo modo de busca em cascata (multi pt-BR -> multi en-US -> search/person -> sugestões), com filtro de pôster e ordenação por popularidade.
+- Sanitizador de texto em `src/lib/` reaproveitado pelo chat.
+- `AnimatedSection` aplicado nas seções restantes; variantes de entrada nas bolhas e cards do chat.
