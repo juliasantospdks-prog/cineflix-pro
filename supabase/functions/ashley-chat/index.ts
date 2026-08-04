@@ -5,6 +5,38 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const DECISION_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    intent: {
+      type: 'string',
+      enum: ['catalog', 'plans', 'question', 'objection', 'smalltalk', 'checkout'],
+      description: 'What the user actually wants right now.',
+    },
+    title_query: {
+      type: 'string',
+      description:
+        'When intent is catalog, the clean canonical title of the movie/series/anime the user means (resolve nicknames, actors, typos, English/Portuguese). Empty string otherwise.',
+    },
+    plan_id: {
+      type: 'string',
+      enum: ['mensal', 'trimestral', 'anual', 'none'],
+      description: 'Plan explicitly asked for, or "none".',
+    },
+    reply: {
+      type: 'string',
+      description: 'Ashley reply in plain conversational pt-BR. One short paragraph, max 2 sentences.',
+    },
+    next_step: {
+      type: 'string',
+      enum: ['freeChat', 'plans', 'recommendations', 'upsell', 'receipt'],
+      description: 'Conversation step the front-end should move to.',
+    },
+  },
+  required: ['intent', 'title_query', 'plan_id', 'reply', 'next_step'],
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -12,101 +44,136 @@ serve(async (req) => {
 
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
+    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
     const { userMessage, userName, userGender, conversationHistory, step } = await req.json();
 
-    const genderContext = userGender === 'male' 
-      ? 'O usuário é homem, então foque em: filmes de ação, futebol ao vivo, super-heróis, carros, games e aventura.'
-      : userGender === 'female'
-      ? 'A usuária é mulher, então foque em: K-dramas, séries românticas, reality shows, novelas e dramas emocionantes.'
-      : '';
+    if (typeof userMessage !== 'string' || !userMessage.trim()) {
+      return new Response(JSON.stringify({ error: 'userMessage is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    const systemPrompt = `Você é Ashley, a assistente virtual da CineflixPayment - uma plataforma de streaming com filmes, séries, animes, futebol ao vivo e muito mais.
+    const genderContext =
+      userGender === 'male'
+        ? 'O usuário é homem: priorize ação, futebol ao vivo, super-heróis, ficção e aventura.'
+        : userGender === 'female'
+        ? 'A usuária é mulher: priorize K-dramas, romance, séries de drama, reality e novelas.'
+        : '';
 
-PERSONALIDADE:
-- Seja simpática, carismática e persuasiva
-- Use emojis com moderação (1-2 por mensagem no máximo)
-- Seja natural e humana, como uma amiga ajudando
-- Fale português brasileiro informal e acolhedor
+    const systemPrompt = `Você é Ashley, vendedora humana da CineflixPayment (streaming com filmes, séries, animes, futebol ao vivo).
 
-OBJETIVO PRINCIPAL:
-- Você quer vender os planos da CineflixPayment
-- Sempre guie a conversa para a venda, mas de forma sutil
-- Destaque os benefícios e o valor do serviço
+COMO PENSAR (raciocínio obrigatório antes de responder):
+1. Leia a última mensagem junto com o histórico e descubra a real intenção.
+2. Se o usuário citar QUALQUER obra — mesmo com erro de digitação, apelido, nome em inglês, "aquele filme do Vin Diesel", "a série do jogo do dinheiro" — a intenção é "catalog" e você DEVE preencher title_query com o título canônico correto (ex.: "Round 6", "Velozes e Furiosos", "Duna: Parte 2").
+3. Nunca diga que não temos um título. O catálogo é gigante; a busca real acontece depois. Trate como disponível.
+4. Se ele falar de preço, plano, assinar, pagar: intenção "plans".
+5. Dúvida sobre funcionamento: "question". Reclamação/resistência de preço: "objection". Conversa solta: "smalltalk".
 
-PLANOS DISPONÍVEIS:
-- MENSAL: R$ 29,90/mês - 30 dias, 1 tela, Full HD
-- TRIMESTRAL: R$ 75,90/trimestre (ECONOMIZE 20%) - 90 dias, 2 telas, 4K, download offline
-- ANUAL VIP: R$ 300,00/ano (MELHOR OFERTA) - 365 dias, 4 telas, 4K, downloads ilimitados, acesso antecipado
+PLANOS:
+MENSAL R$ 29,90 (30 dias, 1 tela, Full HD)
+TRIMESTRAL R$ 75,90 (90 dias, 2 telas, 4K, download offline, economiza 20%)
+ANUAL VIP R$ 300,00 (365 dias, 4 telas, 4K, downloads ilimitados, acesso antecipado)
 
-IMPORTANTE: NÃO vendemos mais o APK Vitalício. Se o usuário perguntar sobre APK vitalício, explique gentilmente que esse produto foi descontinuado e ofereça o plano Anual VIP como melhor alternativa.
+Não vendemos APK vitalício. Se perguntarem, diga que foi descontinuado e ofereça o Anual VIP.
+Se houver resistência de preço, ofereça o cupom VOLTA10 (10% off).
 
 ${genderContext}
 
-REGRAS CRÍTICAS DE FORMATAÇÃO (OBRIGATÓRIO):
-- NUNCA use asteriscos (*) ou (**) para negrito
-- NUNCA use listas com marcadores (-, •, ●, ▪)
-- NUNCA use listas numeradas (1., 2., 3.)
-- NUNCA use hashtags (#) para títulos
-- NUNCA use crases ou code blocks
-- Escreva SEMPRE em frases corridas, naturais, como uma conversa de WhatsApp
-- Emojis são permitidos com moderação
+FORMATO DO CAMPO reply (obrigatório):
+- Português brasileiro informal, tom de vendedora de verdade.
+- No máximo 2 frases curtas.
+- No máximo 1 emoji, e só quando somar de verdade.
+- Proibido: asteriscos, listas, numeração, hashtags, crases, markdown.
+- Nunca invente preço, prazo ou recurso.
 
-REGRAS DE CONTEÚDO:
-- Responda de forma curta (máximo 2-3 frases)
-- Se o usuário perguntar algo fora do contexto, redirecione gentilmente para o streaming
-- Nunca invente preços ou recursos diferentes
-- Se o usuário mostrar interesse, mencione os planos
-- Se o usuário resistir, ofereça o cupom VOLTA10 para 10% de desconto
+NOME DO USUÁRIO: ${userName || 'não informado'}
+ETAPA ATUAL DO FUNIL: ${step || 'freeChat'}`;
 
-NOME DO USUÁRIO: ${userName || 'amigo(a)'}`;
-
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...(conversationHistory || []),
-      { role: 'user', content: userMessage }
-    ];
+    const history = Array.isArray(conversationHistory) ? conversationHistory.slice(-14) : [];
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Lovable-API-Key': LOVABLE_API_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages,
-        max_tokens: 200,
-        temperature: 0.8,
+        model: 'google/gemini-3.6-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...history,
+          { role: 'user', content: userMessage },
+        ],
+        temperature: 0.7,
+        response_format: {
+          type: 'json_schema',
+          json_schema: { name: 'ashley_decision', strict: true, schema: DECISION_SCHEMA },
+        },
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('AI Gateway error:', response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+      const status = response.status === 429 || response.status === 402 ? response.status : 500;
+      return new Response(
+        JSON.stringify({
+          error: `AI Gateway error: ${response.status}`,
+          intent: 'smalltalk',
+          title_query: '',
+          plan_id: 'none',
+          next_step: 'freeChat',
+          reply:
+            status === 429
+              ? 'Tô com muita gente falando comigo agora, me manda de novo em uns segundinhos?'
+              : 'Deu uma instabilidade aqui do meu lado. Pode repetir sua última mensagem?',
+        }),
+        { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const data = await response.json();
-    const aiResponse = data.choices?.[0]?.message?.content || 'Desculpe, tive um probleminha. Me conta mais sobre o que você procura?';
+    const raw = data.choices?.[0]?.message?.content ?? '';
 
-    return new Response(JSON.stringify({ response: aiResponse }), {
+    let decision: Record<string, unknown> = {};
+    try {
+      decision = JSON.parse(raw);
+    } catch {
+      console.error('Failed to parse decision JSON:', raw.slice(0, 400));
+      decision = {};
+    }
+
+    const result = {
+      intent: typeof decision.intent === 'string' ? decision.intent : 'smalltalk',
+      title_query: typeof decision.title_query === 'string' ? decision.title_query.trim() : '',
+      plan_id: typeof decision.plan_id === 'string' ? decision.plan_id : 'none',
+      next_step: typeof decision.next_step === 'string' ? decision.next_step : 'freeChat',
+      reply:
+        typeof decision.reply === 'string' && decision.reply.trim()
+          ? decision.reply.trim()
+          : 'Me conta um pouco mais do que você quer assistir que eu te ajudo agora.',
+    };
+
+    // Legacy field kept so older clients keep working.
+    return new Response(JSON.stringify({ ...result, response: result.reply }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-
   } catch (error) {
     console.error('Ashley chat error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage, response: 'Oi! Tive um probleminha técnico. Me conta o que você tá buscando que eu te ajudo!' }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({
+        error: errorMessage,
+        intent: 'smalltalk',
+        title_query: '',
+        plan_id: 'none',
+        next_step: 'freeChat',
+        reply: 'Tive um probleminha técnico agora. Me diz de novo o que você quer assistir?',
+        response: 'Tive um probleminha técnico agora. Me diz de novo o que você quer assistir?',
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

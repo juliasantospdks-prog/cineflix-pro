@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ChatMessage, Plan, Upsell } from '@/types';
 import { plans, upsells } from '@/data/cineflix';
 import { cn } from '@/lib/utils';
+import { sanitizeAshleyText } from '@/lib/sanitizeText';
 import { supabase } from '@/integrations/supabase/client';
 import ashleyAvatar from '@/assets/ashley-avatar.png.asset.json';
 import ashleyGreeting from '@/assets/ashley-greeting.mp3.asset.json';
@@ -124,15 +125,7 @@ const LOG = (event: string, data?: Record<string, unknown>) => {
   console.log(`[AshleyChat] ${event}`, data ?? '');
 };
 
-const cleanAIResponse = (text: string): string =>
-  (text || '')
-    .replace(/\*\*/g, '')
-    .replace(/\*/g, '')
-    .replace(/^[-•●▪]\s*/gm, '')
-    .replace(/^\d+\.\s+/gm, '')
-    .replace(/#{1,6}\s/g, '')
-    .replace(/`{1,3}/g, '')
-    .trim();
+const cleanAIResponse = (text: string): string => sanitizeAshleyText(text, 1);
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -185,40 +178,10 @@ type QueueItem =
 
 const getMovieTitle = (movie: TMDBMovie) => movie.title || movie.name || 'esse título';
 
-const stripCatalogQuery = (raw: string) => {
-  const cleaned = raw
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\b(voces|voce|vc|tem|têm|possui|possue|passa|assistir|assisti|ver|quero|queria|procura|procurar|buscar|busca|filme|serie|series|anime|desenho|catalogo|disponivel|na cineflix|no catalogo|ai|aí|por favor|pfv)\b/g, ' ')
-    .replace(/[?!.,;:()"']/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return cleaned || raw.trim();
-};
+// Intent detection, title resolution and next step are decided by the AI
+// in the ashley-chat edge function — no keyword guessing on the client.
 
-const isPlanIntent = (text: string) =>
-  /\b(plano|planos|preço|preco|valor|assinar|assinatura|mensal|trimestral|anual|vip|comprar|pagar)\b/i.test(text);
 
-const findRequestedPlan = (text: string) => {
-  const lower = text.toLowerCase();
-  if (/\bmensal\b/.test(lower)) return plans.find((p) => p.id === 'mensal') || null;
-  if (/\btrimestral\b|\b3\s*meses\b/.test(lower)) return plans.find((p) => p.id === 'trimestral') || null;
-  if (/\banual\b|\bvip\b|\bano\b/.test(lower)) return plans.find((p) => p.id === 'anual') || null;
-  return null;
-};
-
-const looksLikeCatalogIntent = (text: string, currentStep: ChatStep) => {
-  if (isPlanIntent(text)) return false;
-  if (/\b(filme|série|serie|anime|doramas?|k-drama|catálogo|catalogo|assistir|tem|têm|disponível|disponivel|passa|procura|buscar|desenho)\b/i.test(text)) {
-    return true;
-  }
-  const generic = /^(oi|olá|ola|bom dia|boa tarde|boa noite|sim|não|nao|ok|beleza|obrigado|obrigada|valeu)$/i;
-  return (currentStep === 'recommendations' || currentStep === 'freeChat' || currentStep === 'plans') &&
-    text.trim().length >= 3 &&
-    text.trim().length <= 70 &&
-    !generic.test(text.trim());
-};
 
 const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -239,6 +202,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const processingQueueRef = useRef(false);
   const hasStartedRef = useRef(false);
   const isMountedRef = useRef(true);
+  const presentPlanAtRef = useRef<((index: number) => Promise<void>) | null>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -350,8 +314,9 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
   const addBotText = useCallback(
     (content: string) => {
-      if (!content) return;
-      enqueue({ kind: 'text', content });
+      const clean = sanitizeAshleyText(content, 1);
+      if (!clean) return;
+      enqueue({ kind: 'text', content: clean });
     },
     [enqueue]
   );
@@ -400,76 +365,128 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     setConversationHistory((prev) => [...prev, { role: 'user', content }]);
   };
 
-  const getAIResponse = async (userMessage: string) => {
-    if (isAiLoading) return;
-    setIsAiLoading(true);
-    try {
-      await waitForQueueIdle();
-      const { data, error } = await supabase.functions.invoke('ashley-chat', {
-        body: { userMessage, userName, userGender, conversationHistory, step },
-      });
-      if (error) throw error;
-      const raw = data?.response || 'Me conta um pouco mais sobre o que você procura? 😊';
-      const response = cleanAIResponse(raw) || 'Me conta um pouco mais sobre o que você procura? 😊';
-      addBotText(response);
-    } catch (err) {
-      console.error('Ashley AI error:', err);
-      addBotText('Tive um probleminha rapidinho aqui 😅. Pode repetir sua última mensagem?');
-    } finally {
-      if (isMountedRef.current) setIsAiLoading(false);
-    }
-  };
 
+  // Search the catalog with the title already resolved by the AI.
   const searchCatalog = useCallback(
-    async (rawQuery: string) => {
+    async (title: string, replyBefore?: string) => {
+      const query = (title || '').trim();
+      if (!query) return;
+      try {
+        await waitForQueueIdle();
+        LOG('catalog.search', { query });
+        const { data, error } = await supabase.functions.invoke('tmdb', {
+          body: { mode: 'smart_search', query },
+        });
+        if (error) throw error;
+
+        const payload = data as { results?: TMDBMovie[]; suggestions?: TMDBMovie[]; strategy?: string };
+        const results = (payload?.results || []).slice(0, 3);
+        const suggestions = (payload?.suggestions || []).slice(0, 3);
+        LOG('catalog.result', { strategy: payload?.strategy, found: results.length });
+
+        if (results.length) {
+          addBotText(cleanAIResponse(replyBefore || `Tem sim, ${userName || 'meu bem'} — já achei no catálogo.`));
+          addMovieResults(query, results);
+          addBotText('Toca em confirmar no título certo que eu libero seu acesso agora.');
+        } else if (suggestions.length) {
+          addBotText(`Esse título específico eu não localizei agora, ${userName || 'meu bem'}, mas olha o que está em alta aqui.`);
+          addMovieResults(query, suggestions);
+          addBotText('Me diz o nome exato que eu procuro de novo, ou escolhe um desses e eu libero na hora.');
+        } else {
+          addBotText('Me manda só o nome do filme ou da série, sem frase, que eu busco de novo pra você.');
+        }
+        setStep('freeChat');
+      } catch (err) {
+        console.error('TMDB chat search error:', err);
+        addBotText('Minha busca oscilou rapidinho. Me manda o nome do título que eu tento novamente.');
+      }
+    },
+    [addBotText, addMovieResults, userName, waitForQueueIdle]
+  );
+
+  // The AI decides the intent, the resolved title and the next step.
+  const routeWithAI = useCallback(
+    async (text: string) => {
       if (isAiLoading) return;
-      const query = stripCatalogQuery(rawQuery);
       setIsAiLoading(true);
       try {
         await waitForQueueIdle();
-        const { data, error } = await supabase.functions.invoke('tmdb', {
-          body: {
-            endpoint: '/search/multi',
-            params: {
-              query,
-              include_adult: 'false',
-              page: '1',
-            },
-          },
+        const { data, error } = await supabase.functions.invoke('ashley-chat', {
+          body: { userMessage: text, userName, userGender, conversationHistory, step },
         });
         if (error) throw error;
-        const results = ((data as TMDBResponse)?.results || [])
-          .filter((item) =>
-            (item.media_type === 'movie' || item.media_type === 'tv' || !item.media_type) &&
-            (item.poster_path || item.backdrop_path)
-          )
-          .slice(0, 3);
 
-        if (results.length) {
-          addBotText(`Achei sim, ${userName || 'meu bem'} 🔥 Confere aqui dentro do chat e toca em confirmar no título que você quer.`);
-          addMovieResults(query, results);
-          addBotText('Se for esse mesmo, eu já te mostro o plano mais indicado pra liberar o acesso agora.');
-          setStep('freeChat');
+        const decision = (data || {}) as {
+          intent?: string;
+          title_query?: string;
+          plan_id?: string;
+          reply?: string;
+          response?: string;
+          next_step?: string;
+        };
+        const reply = cleanAIResponse(decision.reply || decision.response || '');
+        LOG('ai.decision', {
+          intent: decision.intent,
+          title: decision.title_query,
+          plan: decision.plan_id,
+          nextStep: decision.next_step,
+        });
+
+        if (decision.intent === 'catalog' && decision.title_query) {
+          await searchCatalog(decision.title_query, reply);
+          return;
+        }
+
+        const planId = decision.plan_id && decision.plan_id !== 'none' ? decision.plan_id : null;
+        if (decision.intent === 'plans' || planId) {
+          if (reply) addBotText(reply);
+          const plan = planId ? plans.find((p) => p.id === planId) : null;
+          if (plan) {
+            addBotAudio(plan.name, PLAN_AUDIO[plan.id] || ashleyPitchMensal.url);
+            addPlanCard(plan);
+            addComparisonCard(plan.price, plan.name);
+            setStep('plans');
+          } else {
+            await presentPlanAtRef.current?.(0);
+          }
+          return;
+        }
+
+        if (reply) addBotText(reply);
+        const next = decision.next_step;
+        if (next === 'plans' || next === 'recommendations' || next === 'freeChat') {
+          setStep(next as ChatStep);
         } else {
-          addBotText('Não achei esse título certinho no catálogo agora 😅. Me manda só o nome do filme ou série, sem frase, que eu busco de novo.');
           setStep('freeChat');
         }
       } catch (err) {
-        console.error('TMDB chat search error:', err);
-        addBotText('Minha busca no catálogo oscilou rapidinho 😅. Me manda o nome exato do filme ou série que eu tento novamente.');
+        console.error('Ashley routing error:', err);
+        addBotText('Deu uma instabilidade aqui do meu lado. Pode repetir sua última mensagem?');
       } finally {
         if (isMountedRef.current) setIsAiLoading(false);
       }
     },
-    [addBotText, addMovieResults, isAiLoading, userName, waitForQueueIdle]
+    [
+      addBotAudio,
+      addBotText,
+      addComparisonCard,
+      addPlanCard,
+      conversationHistory,
+      isAiLoading,
+      searchCatalog,
+      step,
+      userGender,
+      userName,
+      waitForQueueIdle,
+    ]
   );
 
   const handleConfirmMovie = useCallback(
     (movie: TMDBMovie) => {
       const title = getMovieTitle(movie);
       addUserMessage(`Confirmo: ${title}`);
-      addBotText(`${title} tá disponível sim, ${userName || 'meu bem'} ✅`);
-      addBotText('Pra assistir sem trava, minha indicação é o Anual VIP: 4 telas, 4K e acesso antecipado. Mas se quiser começar menor, o mensal também libera o catálogo.');
+      addBotText(`${title} está liberado no catálogo, ${userName || 'meu bem'}.`);
+      addBotText('Pra assistir sem travar em nenhum dispositivo, o Anual VIP é o que mais vale: 4 telas, 4K e acesso antecipado. Se quiser começar pequeno, o mensal já libera tudo hoje.');
       const anual = plans.find((p) => p.id === 'anual');
       if (anual) {
         addBotAudio(`${anual.icon} ${anual.name}`, PLAN_AUDIO.anual);
@@ -509,15 +526,15 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         LOG('session.returning — skipping greeting', { name, gender: session.userGender });
         addBotText(
           name
-            ? `Oi de novo, ${name}! 💖 Bom te ver por aqui. Me diz o que você quer assistir ou qual plano quer conhecer.`
-            : 'Oi de novo! 💖 Bom te ver por aqui. Me diz o que você quer assistir ou qual plano quer conhecer.'
+            ? `Oi de novo, ${name}. Me diz o título que você quer assistir hoje que eu libero na hora.`
+            : 'Oi de novo. Me diz o título que você quer assistir hoje que eu libero na hora.'
         );
         setStep(name ? 'freeChat' : 'name');
         return;
       }
 
       addBotAudio(
-        'Oi, meu bem! 🎬 Eu sou a Ashley aqui da CineflixPayment. Toca no ▶️ pra me ouvir. Me diz seu nome, vai?',
+        'Oi, eu sou a Ashley da CineflixPayment. Toca no play pra me ouvir e me diz seu nome, vai? 🎬',
         ashleyGreeting.url
       );
       setStep('name');
@@ -568,21 +585,21 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         saveSession({ userName: extracted });
         const guessed = guessGenderFromName(extracted);
         if (guessed === 'male') {
-          addBotAudio(`Aaah, ${extracted}, que nome lindo, querido! 😊`, ashleyQuerido.url);
+          addBotAudio(`Aaah, ${extracted}, que nome bom, querido.`, ashleyQuerido.url);
           setUserGender('male');
           saveSession({ userGender: 'male' });
           await showGenderRecommendations('male');
         } else if (guessed === 'female') {
-          addBotAudio(`Aaah, ${extracted}, que nome lindo, querida! 💖`, ashleyQuerida.url);
+          addBotAudio(`Aaah, ${extracted}, que nome lindo, querida.`, ashleyQuerida.url);
           setUserGender('female');
           saveSession({ userGender: 'female' });
           await showGenderRecommendations('female');
         } else {
-          addBotText(`Prazer em te conhecer, ${extracted}! 😊 Me diz: você é homem ou mulher? Pra eu recomendar melhor.`);
+          addBotText(`Prazer, ${extracted}. Me diz rapidinho: você é homem ou mulher? É só pra eu acertar na indicação.`);
           setStep('gender');
         }
       } else {
-        addBotText('Não peguei seu nome 😅. Pode me dizer só seu primeiro nome?');
+        addBotText('Não peguei seu nome. Pode me dizer só o primeiro?');
       }
       return;
     }
@@ -600,28 +617,13 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         saveSession({ userGender: 'female' });
         await showGenderRecommendations('female');
       } else {
-        addBotText('Me diz: você é homem ou mulher? 😊');
+        addBotText('Me diz rapidinho: você é homem ou mulher? Aí eu acerto na recomendação.');
       }
       return;
     }
 
-    const requestedPlan = findRequestedPlan(text);
-    if (requestedPlan) {
-      await waitForQueueIdle();
-      addBotText(`Claro, ${userName || 'meu bem'}! Vou te mostrar o ${requestedPlan.name} do jeito certo 👇`);
-      addBotAudio(`${requestedPlan.icon} ${requestedPlan.name}`, PLAN_AUDIO[requestedPlan.id] || ashleyPitchMensal.url);
-      addPlanCard(requestedPlan);
-      addComparisonCard(requestedPlan.price, requestedPlan.name);
-      setStep('plans');
-      return;
-    }
-
-    if (looksLikeCatalogIntent(text, step)) {
-      await searchCatalog(text);
-      return;
-    }
-
-    await getAIResponse(text);
+    // From here on the AI does the reasoning and decides what happens next.
+    await routeWithAI(text);
   };
 
   const presentPlanAt = async (index: number) => {
@@ -632,23 +634,27 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     setPlanPitchDone(false);
 
     // 1) audio pitch
-    addBotAudio(`${plan.icon} ${plan.name}`, PLAN_AUDIO[planId]);
+    addBotAudio(plan.name, PLAN_AUDIO[planId]);
     // 2) plan card
     addPlanCard(plan);
     // 3) comparison card + audio only for first (mensal)
     if (planId === 'mensal') {
-      addBotAudio('Olha essa comparação, vai te chocar 👀', ashleyComparacao.url);
+      addBotAudio('Olha essa comparação de preço com os outros streamings.', ashleyComparacao.url);
       addComparisonCard(plan.price, plan.name);
     }
     await waitForQueueIdle();
     if (isMountedRef.current) setPlanPitchDone(true);
   };
 
+  presentPlanAtRef.current = presentPlanAt;
+
+
+
   const handleNextPlan = async () => {
     if (isTyping || isAiLoading || !planPitchDone) return;
     const next = planPresentIndex + 1;
     if (next >= PLAN_ORDER.length) {
-      addBotText('Esses são todos os planos, meu bem! 😊 É só tocar no card acima 👆');
+      addBotText('Esses são os três planos. Escolhe no card aqui em cima que eu já gero seu acesso.');
       return;
     }
     addUserMessage('Ver próximo plano');
@@ -660,15 +666,15 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     const carinho = gender === 'male' ? 'querido' : 'querida';
     const intro =
       gender === 'male'
-        ? `Show, ${carinho}! Olha o catálogo que separei pra você 🔥`
-        : `Perfeito, ${carinho}! Preparei o conteúdo ideal pra você 💖`;
+        ? `Fechado, ${carinho}. Separei o que mais roda aqui pro seu perfil.`
+        : `Perfeito, ${carinho}. Separei o que mais roda aqui pro seu perfil.`;
     addBotText(intro);
     const recs =
       gender === 'male'
-        ? 'Filmes de ação, futebol ao vivo com Champions e Libertadores, Marvel, DC, e toda a saga Velozes e Furiosos em 4K! 🎬'
-        : 'Os K-Dramas mais assistidos, séries românticas, reality shows, e as novelas turcas que todo mundo ama! 💕';
+        ? 'Ação, futebol ao vivo com Champions e Libertadores, Marvel, DC e as sagas completas em 4K, tudo sem anúncio.'
+        : 'K-dramas do momento, séries de romance, reality shows e as novelas turcas completas, tudo dublado e legendado.';
     addBotText(recs);
-    addBotText('Agora deixa eu te apresentar nossos planos, um por um 👇');
+    addBotText('Agora te mostro o plano que mais faz sentido, começando pelo mais barato.');
     setStep('plans');
     await presentPlanAt(0);
   };
@@ -685,8 +691,8 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     if (isAiLoading) return;
     setSelectedPlan(plan);
     addUserMessage(`Quero o ${plan.name}`);
-    addBotText(`Excelente escolha, ${userName || 'meu bem'}! O ${plan.name} é perfeito pra você 🎉`);
-    addBotAudio('Antes de finalizar, dá uma olhadinha nos adicionais 👇', ashleyUpsell.url);
+    addBotText(`Boa escolha, ${userName || 'meu bem'}. O ${plan.name} entra ativo hoje mesmo.`);
+    addBotAudio('Antes de finalizar, dá uma olhada nos adicionais.', ashleyUpsell.url);
     setStep('upsell');
   };
 
@@ -712,14 +718,14 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       .map((id) => upsells.find((u) => u.id === id))
       .filter((u): u is Upsell => !!u);
 
-    addBotText(`Perfeito, ${userName || 'meu bem'}! Já tô gerando seu comprovante... ✨`);
-    addBotAudio('Prontinho! Seu comprovante tá aí 👇', ashleyComprovante.url);
+    addBotText(`Fechado, ${userName || 'meu bem'}. Estou gerando seu comprovante agora.`);
+    addBotAudio('Prontinho, seu comprovante está aqui embaixo.', ashleyComprovante.url);
     addReceiptCard({
       userName: userName || 'Cliente',
       plan: selectedPlan,
       upsells: chosenUpsells,
     });
-    addBotText('Baixa o PDF ou envia direto no WhatsApp — o que ficar melhor pra você 💖');
+    addBotText('Baixa o PDF ou manda direto no WhatsApp, como preferir.');
   };
 
   const handleClose = () => onClose();
