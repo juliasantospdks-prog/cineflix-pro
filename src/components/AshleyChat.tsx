@@ -364,24 +364,6 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     setConversationHistory((prev) => [...prev, { role: 'user', content }]);
   };
 
-  const getAIResponse = async (userMessage: string) => {
-    if (isAiLoading) return;
-    setIsAiLoading(true);
-    try {
-      await waitForQueueIdle();
-      const { data, error } = await supabase.functions.invoke('ashley-chat', {
-        body: { userMessage, userName, userGender, conversationHistory, step },
-      });
-      if (error) throw error;
-      const raw = data?.reply || data?.response || 'Me conta um pouco mais do que você quer assistir.';
-      addBotText(cleanAIResponse(raw));
-    } catch (err) {
-      console.error('Ashley AI error:', err);
-      addBotText('Tive um probleminha rapidinho aqui. Pode repetir sua última mensagem?');
-    } finally {
-      if (isMountedRef.current) setIsAiLoading(false);
-    }
-  };
 
   // Search the catalog with the title already resolved by the AI.
   const searchCatalog = useCallback(
