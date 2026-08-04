@@ -533,7 +533,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       }
 
       addBotAudio(
-        'Oi, meu bem! 🎬 Eu sou a Ashley aqui da CineflixPayment. Toca no ▶️ pra me ouvir. Me diz seu nome, vai?',
+        'Oi, eu sou a Ashley da CineflixPayment. Toca no play pra me ouvir e me diz seu nome, vai? 🎬',
         ashleyGreeting.url
       );
       setStep('name');
