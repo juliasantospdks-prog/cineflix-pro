@@ -409,59 +409,129 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         body: { userMessage, userName, userGender, conversationHistory, step },
       });
       if (error) throw error;
-      const raw = data?.response || 'Me conta um pouco mais sobre o que você procura? 😊';
-      const response = cleanAIResponse(raw) || 'Me conta um pouco mais sobre o que você procura? 😊';
-      addBotText(response);
+      const raw = data?.reply || data?.response || 'Me conta um pouco mais do que você quer assistir.';
+      addBotText(cleanAIResponse(raw));
     } catch (err) {
       console.error('Ashley AI error:', err);
-      addBotText('Tive um probleminha rapidinho aqui 😅. Pode repetir sua última mensagem?');
+      addBotText('Tive um probleminha rapidinho aqui. Pode repetir sua última mensagem?');
     } finally {
       if (isMountedRef.current) setIsAiLoading(false);
     }
   };
 
+  // Search the catalog with the title already resolved by the AI.
   const searchCatalog = useCallback(
-    async (rawQuery: string) => {
+    async (title: string, replyBefore?: string) => {
+      const query = (title || '').trim();
+      if (!query) return;
+      try {
+        await waitForQueueIdle();
+        LOG('catalog.search', { query });
+        const { data, error } = await supabase.functions.invoke('tmdb', {
+          body: { mode: 'smart_search', query },
+        });
+        if (error) throw error;
+
+        const payload = data as { results?: TMDBMovie[]; suggestions?: TMDBMovie[]; strategy?: string };
+        const results = (payload?.results || []).slice(0, 3);
+        const suggestions = (payload?.suggestions || []).slice(0, 3);
+        LOG('catalog.result', { strategy: payload?.strategy, found: results.length });
+
+        if (results.length) {
+          addBotText(cleanAIResponse(replyBefore || `Tem sim, ${userName || 'meu bem'} — já achei no catálogo.`));
+          addMovieResults(query, results);
+          addBotText('Toca em confirmar no título certo que eu libero seu acesso agora.');
+        } else if (suggestions.length) {
+          addBotText(`Esse título específico eu não localizei agora, ${userName || 'meu bem'}, mas olha o que está em alta aqui.`);
+          addMovieResults(query, suggestions);
+          addBotText('Me diz o nome exato que eu procuro de novo, ou escolhe um desses e eu libero na hora.');
+        } else {
+          addBotText('Me manda só o nome do filme ou da série, sem frase, que eu busco de novo pra você.');
+        }
+        setStep('freeChat');
+      } catch (err) {
+        console.error('TMDB chat search error:', err);
+        addBotText('Minha busca oscilou rapidinho. Me manda o nome do título que eu tento novamente.');
+      }
+    },
+    [addBotText, addMovieResults, userName, waitForQueueIdle]
+  );
+
+  // The AI decides the intent, the resolved title and the next step.
+  const routeWithAI = useCallback(
+    async (text: string) => {
       if (isAiLoading) return;
-      const query = stripCatalogQuery(rawQuery);
       setIsAiLoading(true);
       try {
         await waitForQueueIdle();
-        const { data, error } = await supabase.functions.invoke('tmdb', {
-          body: {
-            endpoint: '/search/multi',
-            params: {
-              query,
-              include_adult: 'false',
-              page: '1',
-            },
-          },
+        const { data, error } = await supabase.functions.invoke('ashley-chat', {
+          body: { userMessage: text, userName, userGender, conversationHistory, step },
         });
         if (error) throw error;
-        const results = ((data as TMDBResponse)?.results || [])
-          .filter((item) =>
-            (item.media_type === 'movie' || item.media_type === 'tv' || !item.media_type) &&
-            (item.poster_path || item.backdrop_path)
-          )
-          .slice(0, 3);
 
-        if (results.length) {
-          addBotText(`Achei sim, ${userName || 'meu bem'} 🔥 Confere aqui dentro do chat e toca em confirmar no título que você quer.`);
-          addMovieResults(query, results);
-          addBotText('Se for esse mesmo, eu já te mostro o plano mais indicado pra liberar o acesso agora.');
-          setStep('freeChat');
+        const decision = (data || {}) as {
+          intent?: string;
+          title_query?: string;
+          plan_id?: string;
+          reply?: string;
+          response?: string;
+          next_step?: string;
+        };
+        const reply = cleanAIResponse(decision.reply || decision.response || '');
+        LOG('ai.decision', {
+          intent: decision.intent,
+          title: decision.title_query,
+          plan: decision.plan_id,
+          nextStep: decision.next_step,
+        });
+
+        if (decision.intent === 'catalog' && decision.title_query) {
+          await searchCatalog(decision.title_query, reply);
+          return;
+        }
+
+        const planId = decision.plan_id && decision.plan_id !== 'none' ? decision.plan_id : null;
+        if (decision.intent === 'plans' || planId) {
+          if (reply) addBotText(reply);
+          const plan = planId ? plans.find((p) => p.id === planId) : null;
+          if (plan) {
+            addBotAudio(plan.name, PLAN_AUDIO[plan.id] || ashleyPitchMensal.url);
+            addPlanCard(plan);
+            addComparisonCard(plan.price, plan.name);
+            setStep('plans');
+          } else {
+            await presentPlanAtRef.current?.(0);
+          }
+          return;
+        }
+
+        if (reply) addBotText(reply);
+        const next = decision.next_step;
+        if (next === 'plans' || next === 'recommendations' || next === 'freeChat') {
+          setStep(next as ChatStep);
         } else {
-          addBotText('Não achei esse título certinho no catálogo agora 😅. Me manda só o nome do filme ou série, sem frase, que eu busco de novo.');
           setStep('freeChat');
         }
       } catch (err) {
-        console.error('TMDB chat search error:', err);
-        addBotText('Minha busca no catálogo oscilou rapidinho 😅. Me manda o nome exato do filme ou série que eu tento novamente.');
+        console.error('Ashley routing error:', err);
+        addBotText('Deu uma instabilidade aqui do meu lado. Pode repetir sua última mensagem?');
       } finally {
         if (isMountedRef.current) setIsAiLoading(false);
       }
     },
-    [addBotText, addMovieResults, isAiLoading, userName, waitForQueueIdle]
+    [
+      addBotAudio,
+      addBotText,
+      addComparisonCard,
+      addPlanCard,
+      conversationHistory,
+      isAiLoading,
+      searchCatalog,
+      step,
+      userGender,
+      userName,
+      waitForQueueIdle,
+    ]
   );
 
   const handleConfirmMovie = useCallback(
