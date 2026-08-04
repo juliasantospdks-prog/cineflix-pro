@@ -703,17 +703,21 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     setPlanPitchDone(false);
 
     // 1) audio pitch
-    addBotAudio(`${plan.icon} ${plan.name}`, PLAN_AUDIO[planId]);
+    addBotAudio(plan.name, PLAN_AUDIO[planId]);
     // 2) plan card
     addPlanCard(plan);
     // 3) comparison card + audio only for first (mensal)
     if (planId === 'mensal') {
-      addBotAudio('Olha essa comparação, vai te chocar 👀', ashleyComparacao.url);
+      addBotAudio('Olha essa comparação de preço com os outros streamings.', ashleyComparacao.url);
       addComparisonCard(plan.price, plan.name);
     }
     await waitForQueueIdle();
     if (isMountedRef.current) setPlanPitchDone(true);
   };
+
+  presentPlanAtRef.current = presentPlanAt;
+
+
 
   const handleNextPlan = async () => {
     if (isTyping || isAiLoading || !planPitchDone) return;
