@@ -124,15 +124,7 @@ const LOG = (event: string, data?: Record<string, unknown>) => {
   console.log(`[AshleyChat] ${event}`, data ?? '');
 };
 
-const cleanAIResponse = (text: string): string =>
-  (text || '')
-    .replace(/\*\*/g, '')
-    .replace(/\*/g, '')
-    .replace(/^[-•●▪]\s*/gm, '')
-    .replace(/^\d+\.\s+/gm, '')
-    .replace(/#{1,6}\s/g, '')
-    .replace(/`{1,3}/g, '')
-    .trim();
+const cleanAIResponse = (text: string): string => sanitizeAshleyText(text, 1);
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
