@@ -314,8 +314,9 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
   const addBotText = useCallback(
     (content: string) => {
-      if (!content) return;
-      enqueue({ kind: 'text', content });
+      const clean = sanitizeAshleyText(content, 1);
+      if (!clean) return;
+      enqueue({ kind: 'text', content: clean });
     },
     [enqueue]
   );
