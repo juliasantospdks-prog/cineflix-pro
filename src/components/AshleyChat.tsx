@@ -653,7 +653,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     if (isTyping || isAiLoading || !planPitchDone) return;
     const next = planPresentIndex + 1;
     if (next >= PLAN_ORDER.length) {
-      addBotText('Esses são todos os planos, meu bem! 😊 É só tocar no card acima 👆');
+      addBotText('Esses são os três planos. Escolhe no card aqui em cima que eu já gero seu acesso.');
       return;
     }
     addUserMessage('Ver próximo plano');
