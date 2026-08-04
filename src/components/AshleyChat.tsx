@@ -671,28 +671,13 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         saveSession({ userGender: 'female' });
         await showGenderRecommendations('female');
       } else {
-        addBotText('Me diz: você é homem ou mulher? 😊');
+        addBotText('Me diz rapidinho: você é homem ou mulher? Aí eu acerto na recomendação.');
       }
       return;
     }
 
-    const requestedPlan = findRequestedPlan(text);
-    if (requestedPlan) {
-      await waitForQueueIdle();
-      addBotText(`Claro, ${userName || 'meu bem'}! Vou te mostrar o ${requestedPlan.name} do jeito certo 👇`);
-      addBotAudio(`${requestedPlan.icon} ${requestedPlan.name}`, PLAN_AUDIO[requestedPlan.id] || ashleyPitchMensal.url);
-      addPlanCard(requestedPlan);
-      addComparisonCard(requestedPlan.price, requestedPlan.name);
-      setStep('plans');
-      return;
-    }
-
-    if (looksLikeCatalogIntent(text, step)) {
-      await searchCatalog(text);
-      return;
-    }
-
-    await getAIResponse(text);
+    // From here on the AI does the reasoning and decides what happens next.
+    await routeWithAI(text);
   };
 
   const presentPlanAt = async (index: number) => {
