@@ -484,8 +484,8 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     (movie: TMDBMovie) => {
       const title = getMovieTitle(movie);
       addUserMessage(`Confirmo: ${title}`);
-      addBotText(`${title} tá disponível sim, ${userName || 'meu bem'} ✅`);
-      addBotText('Pra assistir sem trava, minha indicação é o Anual VIP: 4 telas, 4K e acesso antecipado. Mas se quiser começar menor, o mensal também libera o catálogo.');
+      addBotText(`${title} está liberado no catálogo, ${userName || 'meu bem'}.`);
+      addBotText('Pra assistir sem travar em nenhum dispositivo, o Anual VIP é o que mais vale: 4 telas, 4K e acesso antecipado. Se quiser começar pequeno, o mensal já libera tudo hoje.');
       const anual = plans.find((p) => p.id === 'anual');
       if (anual) {
         addBotAudio(`${anual.icon} ${anual.name}`, PLAN_AUDIO.anual);
