@@ -20,7 +20,7 @@ import ashleyComprovante from '@/assets/ashley-comprovante.mp3.asset.json';
 import AshleyAudioBubble, { preloadAshleyAudioFiles, getPreloadedAudioDuration } from './AshleyAudioBubble';
 import PlanComparisonCard from './PlanComparisonCard';
 import ChatReceiptCard from './ChatReceiptCard';
-import ChatMovieResults from './ChatMovieResults';
+import ChatMovieResults, { MovieHook } from './ChatMovieResults';
 import { TMDBMovie, TMDBResponse } from '@/hooks/useTMDB';
 
 interface AshleyChatProps {
@@ -173,7 +173,7 @@ type QueueItem =
   | { kind: 'text' | 'audio'; content: string; audioUrl?: string }
   | { kind: 'plan'; content: string; payload: Plan }
   | { kind: 'comparison'; content: string; payload: { cineflixPrice: number; planLabel: string } }
-  | { kind: 'movies'; content: string; payload: { query: string; movies: TMDBMovie[] } }
+  | { kind: 'movies'; content: string; payload: { query: string; movies: TMDBMovie[]; hooks?: Record<string, MovieHook> } }
   | { kind: 'receipt'; content: string; payload: { userName: string; plan: Plan; upsells: Upsell[] } };
 
 const getMovieTitle = (movie: TMDBMovie) => movie.title || movie.name || 'esse título';
@@ -421,11 +421,13 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
         if (results.length) {
           addBotText(cleanAIResponse(replyBefore || `Tem sim, ${userName || 'meu bem'} — já achei no catálogo.`));
-          addMovieResults(query, results);
+          const hooks = await fetchMovieHooks(results);
+          addMovieResults(query, results, { ...hooks });
           addBotText('Toca em confirmar no título certo que eu libero seu acesso agora.');
         } else if (suggestions.length) {
           addBotText(`Esse título específico eu não localizei agora, ${userName || 'meu bem'}, mas olha o que está em alta aqui.`);
-          addMovieResults(query, suggestions);
+          const sugHooks = await fetchMovieHooks(suggestions);
+          addMovieResults(query, suggestions, { ...sugHooks });
           addBotText('Me diz o nome exato que eu procuro de novo, ou escolhe um desses e eu libero na hora.');
         } else {
           addBotText('Me manda só o nome do filme ou da série, sem frase, que eu busco de novo pra você.');
@@ -436,7 +438,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         addBotText('Minha busca oscilou rapidinho. Me manda o nome do título que eu tento novamente.');
       }
     },
-    [addBotText, addMovieResults, userName, waitForQueueIdle]
+    [addBotText, addMovieResults, fetchMovieHooks, userName, waitForQueueIdle]
   );
 
   // The AI decides the intent, the resolved title and the next step.
@@ -869,11 +871,11 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
             }
 
             if (msg.kind === 'movies' && msg.payload) {
-              const p = msg.payload as { query: string; movies: TMDBMovie[] };
+              const p = msg.payload as { query: string; movies: TMDBMovie[]; hooks?: Record<string, MovieHook> };
               return (
                 <div key={msg.id} className="flex justify-start animate-fade-in">
                   <div className="max-w-[94%] w-full">
-                    <ChatMovieResults query={p.query} movies={p.movies} onConfirm={handleConfirmMovie} />
+                    <ChatMovieResults query={p.query} movies={p.movies} hooks={p.hooks} onConfirm={handleConfirmMovie} />
                     <div className="wa-time text-right pr-1 pt-1">{time}</div>
                   </div>
                 </div>
