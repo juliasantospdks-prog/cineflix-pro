@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
-import { TMDBMovie, getTMDBImageUrl } from '@/hooks/useTMDB';
+import { TMDBMovie, getTMDBImageUrl, useTrailerKey } from '@/hooks/useTMDB';
+import HeroTrailerBackground from '@/components/HeroTrailerBackground';
 import cineflixLogo from '@/assets/cineflix-logo.png';
 
 
@@ -18,6 +19,7 @@ const HeroSection = ({ onOpenChat, onPlayTrailer, movies }: HeroSectionProps) =>
   const [direction, setDirection] = useState(1);
   const heroMovies = movies?.slice(0, 5) || [];
   const current = heroMovies[currentIndex];
+  const { data: trailerKey } = useTrailerKey(current);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -44,7 +46,7 @@ const HeroSection = ({ onOpenChat, onPlayTrailer, movies }: HeroSectionProps) =>
   // Auto-rotate every 6 seconds
   useEffect(() => {
     if (heroMovies.length <= 1) return;
-    const timer = setInterval(goNext, 6000);
+    const timer = setInterval(goNext, 16000);
     return () => clearInterval(timer);
   }, [goNext, heroMovies.length]);
 
@@ -143,6 +145,9 @@ const HeroSection = ({ onOpenChat, onPlayTrailer, movies }: HeroSectionProps) =>
             />
           </motion.div>
         </AnimatePresence>
+
+        {/* Trailer rodando automaticamente por cima da imagem */}
+        <HeroTrailerBackground videoKey={trailerKey} title={title} />
       </motion.div>
 
       {/* Gradient overlays */}
