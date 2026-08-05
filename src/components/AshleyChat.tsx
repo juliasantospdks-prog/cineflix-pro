@@ -335,10 +335,45 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     [enqueue]
   );
   const addMovieResults = useCallback(
-    (query: string, movies: TMDBMovie[]) =>
-      enqueue({ kind: 'movies', content: `Resultados para ${query}`, payload: { query, movies } }),
+    (query: string, movies: TMDBMovie[], hooks?: Record<string, MovieHook>) =>
+      enqueue({ kind: 'movies', content: `Resultados para ${query}`, payload: { query, movies, hooks } }),
     [enqueue]
   );
+
+  // Narrativa de venda por título (gerada pela IA, com cache local por sessão).
+  const hooksCacheRef = useRef<Record<string, MovieHook>>({});
+  const fetchMovieHooks = useCallback(async (movies: TMDBMovie[]) => {
+    const pending = movies.filter((m) => !hooksCacheRef.current[String(m.id)]);
+    if (!pending.length) return hooksCacheRef.current;
+    try {
+      const { data, error } = await supabase.functions.invoke('movie-hooks', {
+        body: {
+          titles: pending.map((m) => ({
+            id: String(m.id),
+            title: m.title || m.name || '',
+            year: (m.release_date || m.first_air_date || '').slice(0, 4),
+            overview: m.overview || '',
+          })),
+        },
+      });
+      if (error) throw error;
+      const hooks = (data as { hooks?: MovieHook[] })?.hooks || [];
+      hooks.forEach((h) => {
+        if (h?.id) {
+          hooksCacheRef.current[String(h.id)] = {
+            id: String(h.id),
+            logline: cleanAIResponse(h.logline || ''),
+            desire: cleanAIResponse(h.desire || ''),
+          };
+        }
+      });
+      LOG('catalog.hooks', { generated: hooks.length });
+    } catch (err) {
+      console.error('Movie hooks error:', err);
+    }
+    return hooksCacheRef.current;
+  }, []);
+
   const addReceiptCard = useCallback(
     (data: { userName: string; plan: Plan; upsells: Upsell[] }) =>
       enqueue({ kind: 'receipt', content: 'Comprovante', payload: data }),
