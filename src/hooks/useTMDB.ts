@@ -124,3 +124,24 @@ export function useTVVideos(tvId: number | null) {
     enabled: !!tvId,
   });
 }
+
+export function useTrailerKey(movie: TMDBMovie | undefined) {
+  const mediaType = movie?.media_type === 'tv' || (!movie?.title && movie?.name) ? 'tv' : 'movie';
+  return useQuery({
+    queryKey: ['tmdb', mediaType, movie?.id, 'trailer-key'],
+    enabled: !!movie?.id,
+    staleTime: 1000 * 60 * 60,
+    queryFn: async () => {
+      const data = await fetchTMDB<{ results: Array<{ key: string; type: string; site: string; official?: boolean }> }>(
+        `/${mediaType}/${movie!.id}/videos`
+      );
+      const videos = (data.results || []).filter((v) => v.site === 'YouTube');
+      const pick =
+        videos.find((v) => v.type === 'Trailer' && v.official) ||
+        videos.find((v) => v.type === 'Trailer') ||
+        videos.find((v) => v.type === 'Teaser') ||
+        videos[0];
+      return pick?.key ?? null;
+    },
+  });
+}
