@@ -472,6 +472,18 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         }
 
         const planId = decision.plan_id && decision.plan_id !== 'none' ? decision.plan_id : null;
+
+        // Rede de segurança: se a IA não classificou como catálogo mas a mensagem
+        // tem cara de nome de obra ("Impuros", "Round 6"), a atendente consulta a
+        // TMDB antes de responder — ela nunca deve dizer que não conhece o título.
+        if (!planId && decision.intent !== 'plans' && looksLikeTitle(text)) {
+          const probe = await probeCatalog(text);
+          if (probe) {
+            await searchCatalog(text, reply);
+            return;
+          }
+        }
+
         if (decision.intent === 'plans' || planId) {
           if (reply) addBotText(reply);
           const plan = planId ? plans.find((p) => p.id === planId) : null;
