@@ -18,11 +18,6 @@ import ContentLock from '@/components/ContentLock';
 import SalesPage2026 from '@/components/SalesPage2026';
 import { 
   useTrendingMovies, 
-  useTrendingSeries, 
-  usePopularMovies, 
-  useActionMovies,
-  useKoreanDramas,
-  useRomanceMovies,
   TMDBMovie 
 } from '@/hooks/useTMDB';
 
@@ -45,11 +40,6 @@ const Index = () => {
   };
 
   const { data: trendingMovies, isLoading: trendingLoading } = useTrendingMovies();
-  const { data: trendingSeries, isLoading: seriesLoading } = useTrendingSeries();
-  const { data: popularMovies, isLoading: popularLoading } = usePopularMovies();
-  const { data: actionMovies, isLoading: actionLoading } = useActionMovies();
-  const { data: koreanDramas, isLoading: koreanLoading } = useKoreanDramas();
-  const { data: romanceMovies, isLoading: romanceLoading } = useRomanceMovies();
 
   const handlePlayTrailer = (movie: TMDBMovie) => {
     setSelectedMovie(movie);
@@ -85,35 +75,14 @@ const Index = () => {
           <PlansSection onOpenChatWithPlan={openChatWithMessage} />
         </div>
 
-        {/* Galleries */}
-        <div className="space-y-1 pb-4">
-          <TMDBGallery title="🔥 Em Alta" movies={trendingMovies?.results} isLoading={trendingLoading} onPlayTrailer={handlePlayTrailer} />
-          <TMDBGallery title="📺 Séries Populares" movies={trendingSeries?.results?.slice(0, 12)} isLoading={seriesLoading} onPlayTrailer={handlePlayTrailer} />
-          <TMDBGallery title="⚡ Ação" movies={actionMovies?.results} isLoading={actionLoading} onPlayTrailer={handlePlayTrailer} />
-          <TMDBGallery title="🌸 K-Dramas" movies={koreanDramas?.results} isLoading={koreanLoading} onPlayTrailer={handlePlayTrailer} />
-          <TMDBGallery title="💕 Romance" movies={romanceMovies?.results} isLoading={romanceLoading} onPlayTrailer={handlePlayTrailer} />
-          <TMDBGallery title="🎬 Populares" movies={popularMovies?.results} isLoading={popularLoading} onPlayTrailer={handlePlayTrailer} />
-          
-          {/* Upsell CTA */}
-          {(
-            <AnimatedSection className="px-4 md:px-8 py-6" delay={0.2}>
-              <div className="bg-gradient-to-r from-cinema-red/10 via-cinema-panel to-cinema-red/10 border border-cinema-red/20 rounded-2xl p-6 md:p-8 text-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cinema-red/5 to-transparent animate-shimmer" />
-                <div className="relative z-10">
-                  <p className="text-xl md:text-2xl font-bold text-white mb-2">🔥 Quer assistir tudo sem limites?</p>
-                  <p className="text-white/50 text-sm mb-5">Conheça nossos planos a partir de R$ 29,90/mês</p>
-                  <motion.button
-                    onClick={() => openChatWithMessage('Quero conhecer os planos disponíveis')}
-                    className="inline-block px-8 py-3.5 rounded-xl font-bold bg-cinema-red hover:bg-cinema-glow text-white transition-all duration-300 shadow-button"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Ver Planos
-                  </motion.button>
-                </div>
-              </div>
-            </AnimatedSection>
-          )}
+        {/* Catálogo — uma trilha só, a que realmente converte */}
+        <div className="pb-4">
+          <TMDBGallery
+            title="Em alta agora na CineflixPayment"
+            movies={trendingMovies?.results}
+            isLoading={trendingLoading}
+            onPlayTrailer={handlePlayTrailer}
+          />
         </div>
 
         {/* Social proof */}

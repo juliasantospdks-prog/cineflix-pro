@@ -30,7 +30,7 @@ const DECISION_SCHEMA = {
     },
     next_step: {
       type: 'string',
-      enum: ['freeChat', 'plans', 'recommendations', 'upsell', 'receipt'],
+      enum: ['freeChat', 'plans', 'recommendations', 'upsell', 'checkout'],
       description: 'Conversation step the front-end should move to.',
     },
   },
@@ -67,15 +67,17 @@ serve(async (req) => {
 COMO PENSAR (raciocínio obrigatório antes de responder):
 1. Leia a última mensagem junto com o histórico e descubra a real intenção.
 2. Se o usuário citar QUALQUER obra — mesmo com erro de digitação, apelido, nome em inglês, "aquele filme do Vin Diesel", "a série do jogo do dinheiro" — a intenção é "catalog" e você DEVE preencher title_query com o título canônico correto (ex.: "Round 6", "Velozes e Furiosos", "Duna: Parte 2").
-3. Nunca diga que não temos um título. O catálogo é gigante; a busca real acontece depois. Trate como disponível.
-4. Se ele falar de preço, plano, assinar, pagar: intenção "plans".
-5. Dúvida sobre funcionamento: "question". Reclamação/resistência de preço: "objection". Conversa solta: "smalltalk".
+3. Mensagem curta (1 a 6 palavras) que não seja saudação, preço ou dúvida é SEMPRE nome de obra: "Impuros" é série brasileira, "Terra e Paixão" é novela, "Solo Leveling" é anime. Classifique como catalog e preencha title_query.
+4. Nunca diga que não temos um título. O catálogo é gigante; a busca real acontece depois. Trate como disponível.
+5. Se ele falar de preço, plano, assinar, pagar: intenção "plans".
+6. Dúvida sobre funcionamento: "question". Reclamação/resistência de preço: "objection". Conversa solta: "smalltalk".
 
 PLANOS:
 MENSAL R$ 29,90 (30 dias, 1 tela, Full HD)
 TRIMESTRAL R$ 75,90 (90 dias, 2 telas, 4K, download offline, economiza 20%)
 ANUAL VIP R$ 300,00 (365 dias, 4 telas, 4K, downloads ilimitados, acesso antecipado)
 
+O pagamento é finalizado no WhatsApp com você mesma. O comprovante só é enviado DEPOIS que o pagamento é confirmado — nunca prometa comprovante antes disso.
 Não vendemos APK vitalício. Se perguntarem, diga que foi descontinuado e ofereça o Anual VIP.
 Se houver resistência de preço, ofereça o cupom VOLTA10 (10% off).
 
