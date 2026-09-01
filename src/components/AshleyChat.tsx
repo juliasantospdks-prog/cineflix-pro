@@ -3,7 +3,7 @@ import { Send, X, Check, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChatMessage, Plan, Upsell } from '@/types';
-import { plans, upsells } from '@/data/cineflix';
+import { plans, upsells, WHATSAPP_NUMBER } from '@/data/cineflix';
 import { cn } from '@/lib/utils';
 import { sanitizeAshleyText } from '@/lib/sanitizeText';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,10 +16,8 @@ import ashleyPitchTrimestral from '@/assets/ashley-pitch-trimestral.mp3.asset.js
 import ashleyPitchAnual from '@/assets/ashley-pitch-anual.mp3.asset.json';
 import ashleyComparacao from '@/assets/ashley-comparacao.mp3.asset.json';
 import ashleyUpsell from '@/assets/ashley-upsell.mp3.asset.json';
-import ashleyComprovante from '@/assets/ashley-comprovante.mp3.asset.json';
 import AshleyAudioBubble, { preloadAshleyAudioFiles, getPreloadedAudioDuration } from './AshleyAudioBubble';
 import PlanComparisonCard from './PlanComparisonCard';
-import ChatReceiptCard from './ChatReceiptCard';
 import ChatMovieResults, { MovieHook } from './ChatMovieResults';
 import { TMDBMovie, TMDBResponse } from '@/hooks/useTMDB';
 
@@ -36,7 +34,7 @@ type ChatStep =
   | 'recommendations'
   | 'plans'
   | 'upsell'
-  | 'receipt'
+  | 'checkout'
   | 'recovery'
   | 'freeChat';
 type UserGender = 'male' | 'female' | null;
@@ -60,7 +58,6 @@ const ASHLEY_AUDIO_URLS = [
   ashleyPitchAnual.url,
   ashleyComparacao.url,
   ashleyUpsell.url,
-  ashleyComprovante.url,
 ];
 
 const PLAN_AUDIO: Record<string, string> = {
@@ -174,7 +171,7 @@ type QueueItem =
   | { kind: 'plan'; content: string; payload: Plan }
   | { kind: 'comparison'; content: string; payload: { cineflixPrice: number; planLabel: string } }
   | { kind: 'movies'; content: string; payload: { query: string; movies: TMDBMovie[]; hooks?: Record<string, MovieHook> } }
-  | { kind: 'receipt'; content: string; payload: { userName: string; plan: Plan; upsells: Upsell[] } };
+  | { kind: 'handoff'; content: string; payload: { planName: string; total: number; url: string } };
 
 const getMovieTitle = (movie: TMDBMovie) => movie.title || movie.name || 'esse título';
 
@@ -259,7 +256,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
           kind: item.kind,
           audioUrl: item.kind === 'audio' ? (item as { audioUrl?: string }).audioUrl : undefined,
           payload:
-            item.kind === 'plan' || item.kind === 'comparison' || item.kind === 'movies' || item.kind === 'receipt'
+            item.kind === 'plan' || item.kind === 'comparison' || item.kind === 'movies' || item.kind === 'handoff'
               ? (item as { payload: unknown }).payload
               : undefined,
         };
@@ -374,9 +371,9 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     return hooksCacheRef.current;
   }, []);
 
-  const addReceiptCard = useCallback(
-    (data: { userName: string; plan: Plan; upsells: Upsell[] }) =>
-      enqueue({ kind: 'receipt', content: 'Comprovante', payload: data }),
+  const addHandoffCard = useCallback(
+    (data: { planName: string; total: number; url: string }) =>
+      enqueue({ kind: 'handoff', content: 'Finalizar no WhatsApp', payload: data }),
     [enqueue]
   );
 
@@ -750,19 +747,25 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
   const handleConfirmUpsells = async () => {
     if (!selectedPlan) return;
-    setStep('receipt');
+    setStep('checkout');
     const chosenUpsells = selectedUpsells
       .map((id) => upsells.find((u) => u.id === id))
       .filter((u): u is Upsell => !!u);
+    const total = calculateTotal();
 
-    addBotText(`Fechado, ${userName || 'meu bem'}. Estou gerando seu comprovante agora.`);
-    addBotAudio('Prontinho, seu comprovante está aqui embaixo.', ashleyComprovante.url);
-    addReceiptCard({
-      userName: userName || 'Cliente',
-      plan: selectedPlan,
-      upsells: chosenUpsells,
-    });
-    addBotText('Baixa o PDF ou manda direto no WhatsApp, como preferir.');
+    const lines = [
+      `Oi! Sou ${userName || 'novo cliente'} e quero fechar o ${selectedPlan.name}.`,
+      `Valor: R$ ${total.toFixed(2)}`,
+    ];
+    if (chosenUpsells.length) {
+      lines.push(`Adicionais: ${chosenUpsells.map((u) => u.name).join(', ')}`);
+    }
+    lines.push('Pode me passar o pagamento?');
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
+
+    addBotText(`Fechado, ${userName || 'meu bem'}. O pagamento a gente finaliza direto no WhatsApp comigo.`);
+    addHandoffCard({ planName: selectedPlan.name, total, url });
+    addBotText('Assim que o pagamento for confirmado eu te envio o comprovante e os dados de acesso ali mesmo.');
   };
 
   const handleClose = () => onClose();
