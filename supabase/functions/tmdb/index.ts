@@ -32,8 +32,33 @@ serve(async (req) => {
     const TMDB_READ_TOKEN = Deno.env.get('TMDB_READ_TOKEN');
     if (!TMDB_READ_TOKEN) throw new Error('TMDB_READ_TOKEN not configured');
 
-    const body = await req.json();
-    const { endpoint, params, mode, query } = body ?? {};
+    // Body can be empty (e.g. preflight-less GET or aborted invoke) — never let JSON.parse throw
+    let body: Record<string, unknown> = {};
+    try {
+      const rawBody = await req.text();
+      if (rawBody.trim()) body = JSON.parse(rawBody);
+    } catch (_e) {
+      body = {};
+    }
+
+    const url = new URL(req.url);
+    const { endpoint, params, mode, query } = (body ?? {}) as {
+      endpoint?: string;
+      params?: Record<string, string>;
+      mode?: string;
+      query?: string;
+    };
+
+    const resolvedEndpoint = endpoint || url.searchParams.get('endpoint') || '';
+    const resolvedMode = mode || url.searchParams.get('mode') || '';
+    const resolvedQuery = query || url.searchParams.get('query') || '';
+
+    if (!resolvedEndpoint && !resolvedMode) {
+      return new Response(JSON.stringify({ error: 'endpoint or mode is required', results: [] }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const call = async (path: string, extra: Record<string, string> = {}, language = 'pt-BR') => {
       const qs = new URLSearchParams({ language, ...extra });
