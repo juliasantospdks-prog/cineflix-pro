@@ -79,8 +79,8 @@ serve(async (req) => {
     };
 
     // ---- Smart cascade search used by the Ashley chat ----
-    if (mode === 'smart_search') {
-      const term = String(query ?? '').trim();
+    if (resolvedMode === 'smart_search') {
+      const term = String(resolvedQuery ?? '').trim();
       if (!term) {
         return new Response(JSON.stringify({ results: [], suggestions: [], strategy: 'empty' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -142,7 +142,7 @@ serve(async (req) => {
     }
 
     // ---- Passthrough mode (galleries, videos, discover) ----
-    const data = await call(endpoint, params ?? {});
+    const data = await call(resolvedEndpoint, params ?? {});
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
