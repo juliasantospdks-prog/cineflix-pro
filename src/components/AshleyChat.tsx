@@ -175,6 +175,26 @@ type QueueItem =
 
 const getMovieTitle = (movie: TMDBMovie) => movie.title || movie.name || 'esse título';
 
+// Palavras que indicam conversa/objeção, não título de obra.
+const NON_TITLE_WORDS = new Set([
+  'oi','ola','olá','bom','boa','dia','tarde','noite','tudo','bem','obrigado','obrigada','valeu','ok','okay','sim','nao','não',
+  'preco','preço','precos','preços','plano','planos','quanto','custa','pagar','pagamento','pix','cartao','cartão','assinar',
+  'quero','queria','tem','teria','como','onde','quando','porque','por','que','qual','quais','funciona','telas','tela','app',
+  'suporte','ajuda','caro','barato','desconto','cupom','teste','gratis','grátis','sou','meu','minha','nome','ainda','agora',
+]);
+
+// Heurística: mensagem curta com pelo menos uma palavra que não é conversa fiada
+// tende a ser o nome de um filme, série, anime ou novela.
+const looksLikeTitle = (text: string): boolean => {
+  const clean = text.trim().replace(/[?!.,;:]+$/g, '');
+  if (clean.length < 3 || clean.length > 60) return false;
+  const words = clean.split(/\s+/);
+  if (words.length > 6) return false;
+  const meaningful = words.filter((w) => w.length >= 3 && !NON_TITLE_WORDS.has(w.toLowerCase()));
+  return meaningful.length > 0;
+};
+
+
 // Intent detection, title resolution and next step are decided by the AI
 // in the ashley-chat edge function — no keyword guessing on the client.
 
@@ -438,6 +458,22 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     [addBotText, addMovieResults, fetchMovieHooks, userName, waitForQueueIdle]
   );
 
+  // Consulta silenciosa: só confirma se a TMDB reconhece o termo como obra.
+  const probeCatalog = useCallback(async (term: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('tmdb', {
+        body: { mode: 'smart_search', query: term.trim() },
+      });
+      if (error) throw error;
+      const found = ((data as { results?: TMDBMovie[] })?.results || []).length > 0;
+      LOG('catalog.probe', { term, found });
+      return found;
+    } catch (err) {
+      console.error('TMDB probe error:', err);
+      return false;
+    }
+  }, []);
+
   // The AI decides the intent, the resolved title and the next step.
   const routeWithAI = useCallback(
     async (text: string) => {
@@ -520,6 +556,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       conversationHistory,
       isAiLoading,
       searchCatalog,
+      probeCatalog,
       step,
       userGender,
       userName,
