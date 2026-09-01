@@ -882,13 +882,25 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
               );
             }
 
-            if (msg.kind === 'receipt' && msg.payload) {
-              const p = msg.payload as { userName: string; plan: Plan; upsells: Upsell[] };
+            if (msg.kind === 'handoff' && msg.payload) {
+              const p = msg.payload as { planName: string; total: number; url: string };
               return (
                 <div key={msg.id} className="flex justify-start animate-fade-in">
-                  <div>
-                    <ChatReceiptCard userName={p.userName} plan={p.plan} selectedUpsells={p.upsells} />
-                    <div className="wa-time text-right pr-1 pt-1">{time}</div>
+                  <div className="relative max-w-[92%] w-full bg-[#202c33] rounded-lg overflow-hidden shadow-md">
+                    <div className="p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-white/50 mb-1">Finalizar no WhatsApp</p>
+                      <p className="font-bold text-white text-sm mb-0.5">{p.planName}</p>
+                      <p className="text-2xl font-black text-cinema-glow mb-2">R$ {p.total.toFixed(2)}</p>
+                      <p className="text-xs text-white/70 mb-3">
+                        O pagamento é confirmado no atendimento e o comprovante é enviado só depois que ele cair.
+                      </p>
+                      <a href={p.url} target="_blank" rel="noopener noreferrer">
+                        <Button variant="cinema" size="sm" className="w-full">
+                          Falar com o atendimento agora
+                        </Button>
+                      </a>
+                    </div>
+                    <div className="wa-time text-right px-3 pb-1.5">{time}</div>
                   </div>
                 </div>
               );
