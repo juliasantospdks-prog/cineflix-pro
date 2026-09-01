@@ -1,7 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { motion } from 'framer-motion';
 import Header from '@/components/Header';
 import CountdownBanner from '@/components/CountdownBanner';
 import HeroSection from '@/components/HeroSection';
@@ -14,7 +11,6 @@ import AnimatedSection from '@/components/AnimatedSection';
 import Footer from '@/components/Footer';
 import ChatFAB from '@/components/ChatFAB';
 import AshleyChat from '@/components/AshleyChat';
-import ContentLock from '@/components/ContentLock';
 import SalesPage2026 from '@/components/SalesPage2026';
 import { 
   useTrendingMovies, 
@@ -23,7 +19,6 @@ import {
 
 
 const Index = () => {
-  const { user } = useAuth();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>(undefined);
   const [selectedMovie, setSelectedMovie] = useState<TMDBMovie | null>(null);
