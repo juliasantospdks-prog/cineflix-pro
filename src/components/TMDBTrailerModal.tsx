@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Loader2, Volume2, VolumeX, Star, Calendar } from 'lucide-react';
+import { X, Loader2, Volume2, VolumeX, Star, Calendar, Play } from 'lucide-react';
 import { TMDBMovie, getTMDBImageUrl, useMovieVideos, useTVVideos } from '@/hooks/useTMDB';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -133,17 +133,9 @@ const TMDBTrailerModal = ({ movie, isOpen, onClose }: TMDBTrailerModalProps) => 
               <a
                 href="#planos"
                 onClick={(e) => { e.preventDefault(); onClose(); setTimeout(() => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' }), 300); }}
-                className="px-5 py-2.5 rounded-xl bg-cinema-red hover:bg-cinema-glow text-white font-bold text-sm transition-all duration-300 hover:scale-105 shadow-button"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cinema-red hover:bg-cinema-glow text-white font-bold text-sm transition-all duration-300 hover:scale-105 shadow-button"
               >
-                🎬 Assinar e Assistir
-              </a>
-              <a
-                href="https://pay.cakto.com.br/n8rrwfq_735392"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-sm transition-all duration-300 hover:scale-105"
-              >
-                🤖 APK Vitalício — R$ 97,90
+                <Play className="h-4 w-4 fill-current" /> Assinar e assistir
               </a>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, X, Check, CheckCheck } from 'lucide-react';
+import { Send, X, Check, CheckCheck, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChatMessage, Plan, Upsell } from '@/types';
@@ -617,7 +617,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       }
 
       addBotAudio(
-        'Oi, eu sou a Ashley da CineflixPayment. Toca no play pra me ouvir e me diz seu nome, vai? 🎬',
+        'Oi, eu sou a Ashley da CineflixPayment. Toca no play para me ouvir e depois me diz seu nome.',
         ashleyGreeting.url
       );
       setStep('name');
@@ -994,14 +994,14 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
                 onClick={() => handleSelectGender('male')}
                 className="flex-1 p-3 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 transition-all"
               >
-                <span className="text-2xl block mb-1">👨</span>
+                <UserRound className="mx-auto mb-1 h-6 w-6 text-blue-300" />
                 <span className="font-semibold text-white text-sm">Sou Homem</span>
               </button>
               <button
                 onClick={() => handleSelectGender('female')}
                 className="flex-1 p-3 rounded-xl bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/40 transition-all"
               >
-                <span className="text-2xl block mb-1">👩</span>
+                <UserRound className="mx-auto mb-1 h-6 w-6 text-pink-300" />
                 <span className="font-semibold text-white text-sm">Sou Mulher</span>
               </button>
             </div>
