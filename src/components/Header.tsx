@@ -8,9 +8,7 @@ import cineflixLogo from '@/assets/cineflix-logo.png';
 
 const navLinks = [
   { label: 'Início', href: '#' },
-  { label: 'Filmes', href: '#filmes' },
-  { label: 'Séries', href: '#series' },
-  { label: 'App', href: '#app' },
+  { label: 'Em alta', href: '#filmes' },
   { label: 'Planos', href: '#planos' },
 ];
 

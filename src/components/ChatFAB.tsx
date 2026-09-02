@@ -26,7 +26,7 @@ const ChatFAB = ({ onClick }: ChatFABProps) => {
             exit={{ opacity: 0, y: 10, scale: 0.9 }}
             className="bg-white text-cinema-dark px-4 py-2.5 rounded-xl shadow-xl text-sm font-medium max-w-[200px] relative"
           >
-            Oi! Precisa de ajuda? 😊
+            Oi, posso ajudar você a escolher?
             <div className="absolute -bottom-1.5 right-6 w-3 h-3 bg-white rotate-45" />
           </motion.div>
         )}
@@ -57,10 +57,6 @@ const ChatFAB = ({ onClick }: ChatFABProps) => {
           className="w-full h-full object-cover group-hover:scale-110 transition-transform"
         />
 
-        {/* Notification badge */}
-        <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-cinema-red text-xs font-bold rounded-full flex items-center justify-center shadow-sm animate-bounce-subtle">
-          1
-        </span>
       </motion.button>
     </div>
   );

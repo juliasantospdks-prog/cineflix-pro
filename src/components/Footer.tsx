@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Mail, Phone, Instagram, Youtube, MessageCircle } from 'lucide-react';
+import { Mail, Instagram, Youtube, MessageCircle } from 'lucide-react';
 import cineflixLogo from '@/assets/cineflix-logo.png';
 import { WHATSAPP_NUMBER } from '@/data/cineflix';
 
@@ -18,7 +18,7 @@ const Footer = () => {
               <span className="text-xl font-bold text-white">CINEFLIXPAYMENT</span>
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
-              A melhor plataforma de streaming do Brasil. Filmes, séries, animes, K-dramas, futebol ao vivo e muito mais!
+              Um catálogo direto ao ponto para encontrar o que assistir e escolher seu período de acesso.
             </p>
           </div>
 
@@ -26,11 +26,8 @@ const Footer = () => {
           <div>
             <h4 className="text-white font-semibold mb-4">Navegação</h4>
             <ul className="space-y-2">
-              <li><a href="#filmes" className="text-white/60 hover:text-cinema-red transition-colors text-sm">Filmes</a></li>
-              <li><a href="#series" className="text-white/60 hover:text-cinema-red transition-colors text-sm">Séries</a></li>
-              <li><a href="#kdramas" className="text-white/60 hover:text-cinema-red transition-colors text-sm">K-Dramas</a></li>
-              <li><a href="#animes" className="text-white/60 hover:text-cinema-red transition-colors text-sm">Animes</a></li>
-              <li><a href="#futebol" className="text-white/60 hover:text-cinema-red transition-colors text-sm">Futebol ao Vivo</a></li>
+              <li><a href="#filmes" className="text-white/60 hover:text-cinema-red transition-colors text-sm">Em alta</a></li>
+              <li><a href="#planos" className="text-white/60 hover:text-cinema-red transition-colors text-sm">Planos</a></li>
             </ul>
           </div>
 

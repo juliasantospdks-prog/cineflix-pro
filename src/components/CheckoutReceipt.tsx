@@ -367,7 +367,7 @@ const CheckoutReceipt = () => {
             </div>
 
             <p className="text-center text-white/40 text-[10px] mt-4">
-              Obrigado por escolher a <span className="text-red-500 font-bold">CINEFLIXPAYMENT</span> · Deus abençoe 🙏
+              Obrigado por escolher a <span className="text-red-500 font-bold">CINEFLIXPAYMENT</span>.
             </p>
           </div>
 

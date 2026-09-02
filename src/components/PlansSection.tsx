@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ArrowLeft, Plus, Minus, User2 } from 'lucide-react';
+import { Check, ArrowLeft, Plus, Minus, User2, Gift, Sparkles, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { plans, upsells, WHATSAPP_NUMBER, KIRVANO_LINKS } from '@/data/cineflix';
+import { plans, upsells } from '@/data/cineflix';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { Plan, Upsell } from '@/types';
@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import planMensalIcon from '@/assets/plan-mensal-new.png';
 import planTrimestralIcon from '@/assets/plan-trimestral-new.png';
 import planAnualIcon from '@/assets/plan-anual-new.png';
-import planApkIcon from '@/assets/plan-apk-icon.png';
 
 
 interface PlansSectionProps {
@@ -68,7 +67,7 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
     analytics.beginCheckout(selectedPlan.id, selectedPlan.name, calculateTotal());
     navigate(`/comprovante?plano=${selectedPlan.id}&nome=${encodeURIComponent(nome)}&email=${encodeURIComponent(email)}${upsellParam}`);
 
-    const confirmationMessage = `Você tomou uma ótima decisão escolhendo o ${selectedPlan.name}, ${nome}! 🎉 Abaixo você vai seguir para o próximo passo para ter acesso a todo nosso catálogo... Deus abençoe! 🙏`;
+    const confirmationMessage = `${nome}, seu ${selectedPlan.name} foi selecionado. Vou acompanhar você no próximo passo para liberar o catálogo.`;
     onOpenChatWithPlan?.(confirmationMessage);
 
     setShowUpsells(false);
@@ -115,7 +114,6 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
       case 'mensal': return planMensalIcon;
       case 'trimestral': return planTrimestralIcon;
       case 'anual': return planAnualIcon;
-      case 'apk': return planApkIcon;
       default: return planMensalIcon;
     }
   };
@@ -158,15 +156,11 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
           viewport={{ once: true, margin: '-80px' }}
           variants={headerVariants}
         >
-          <span className="inline-block px-4 py-2 bg-cinema-red/20 text-cinema-red rounded-full text-sm font-bold mb-4">
-            PLANOS EXCLUSIVOS
-          </span>
           <h2 className="text-4xl md:text-5xl font-cinema font-bold text-white mb-4">
-            Escolha seu <span className="text-cinema-red">Plano</span>
+            Escolha por quanto tempo quer assistir
           </h2>
           <p className="text-white/70 text-lg max-w-2xl mx-auto">
-            Acesso ilimitado a milhares de filmes, séries, animes e muito mais. 
-            Cancele quando quiser.
+            O mesmo catálogo em todos os planos. Você decide a duração e a quantidade de telas.
           </p>
         </motion.div>
 
@@ -220,8 +214,8 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
 
               {/* Upsells Grid */}
               <div className="mb-8">
-                <h3 className="text-2xl font-bold text-white mb-2">🎁 Ofertas Exclusivas</h3>
-                <p className="text-white/60 mb-6">Adicione extras ao seu plano com desconto especial!</p>
+                <h3 className="flex items-center gap-2 text-2xl font-bold text-white mb-2"><Gift className="h-5 w-5 text-cinema-red" /> Complete seu acesso</h3>
+                <p className="text-white/60 mb-6">Escolha somente o conteúdo adicional que fizer sentido para você.</p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {upsells.map((upsell, index) => {
@@ -273,8 +267,8 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
                     </div>
                   </div>
                   {selectedUpsells.length > 0 && (
-                    <div className="text-cinema-gold text-sm">
-                      ✨ {selectedUpsells.length} extra(s) adicionado(s)
+                    <div className="flex items-center gap-1.5 text-cinema-gold text-sm">
+                      <Sparkles className="h-4 w-4" /> {selectedUpsells.length} extra(s) adicionado(s)
                     </div>
                   )}
                 </div>
@@ -396,7 +390,7 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    {plan.id === 'apk' ? '🤖 Comprar APK' : '🎬 Assinar Agora'}
+                    <span className="inline-flex items-center justify-center gap-2"><Play className="h-4 w-4 fill-current" /> Escolher este plano</span>
                   </motion.button>
                 </div>
               </motion.div>

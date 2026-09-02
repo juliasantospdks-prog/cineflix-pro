@@ -4,14 +4,10 @@ import CountdownBanner from '@/components/CountdownBanner';
 import HeroSection from '@/components/HeroSection';
 import TMDBGallery from '@/components/TMDBGallery';
 import TMDBTrailerModal from '@/components/TMDBTrailerModal';
-import SocialProof from '@/components/SocialProof';
 import PlansSection from '@/components/PlansSection';
-import AnimatedSection from '@/components/AnimatedSection';
-
 import Footer from '@/components/Footer';
 import ChatFAB from '@/components/ChatFAB';
 import AshleyChat from '@/components/AshleyChat';
-import SalesPage2026 from '@/components/SalesPage2026';
 import { 
   useTrendingMovies, 
   TMDBMovie 
@@ -79,16 +75,6 @@ const Index = () => {
             onPlayTrailer={handlePlayTrailer}
           />
         </div>
-
-        {/* Social proof */}
-        <AnimatedSection>
-          <SocialProof />
-        </AnimatedSection>
-
-        {/* Sales page 2026 */}
-        <AnimatedSection delay={0.2}>
-          <SalesPage2026 />
-        </AnimatedSection>
 
       </main>
 
