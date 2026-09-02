@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { TrendingDown, Zap } from 'lucide-react';
+import { Film, Package, Theater, Tv, Castle, TrendingDown, Zap } from 'lucide-react';
 
 const COMPETITORS = [
-  { name: 'Netflix Premium', price: 59.90, emoji: '🎬' },
-  { name: 'Amazon Prime', price: 19.90, emoji: '📦' },
-  { name: 'HBO Max', price: 34.90, emoji: '🎭' },
-  { name: 'Globoplay', price: 29.90, emoji: '📺' },
-  { name: 'Disney+', price: 33.90, emoji: '🏰' },
+  { name: 'Netflix Premium', price: 59.90, icon: Film },
+  { name: 'Amazon Prime', price: 19.90, icon: Package },
+  { name: 'HBO Max', price: 34.90, icon: Theater },
+  { name: 'Globoplay', price: 29.90, icon: Tv },
+  { name: 'Disney+', price: 33.90, icon: Castle },
 ];
 
 interface PlanComparisonCardProps {
@@ -43,15 +43,16 @@ const PlanComparisonCard = ({ cineflixPrice, planLabel }: PlanComparisonCardProp
       </div>
 
       <div className="px-4 py-3 space-y-1.5">
-        {COMPETITORS.map((c) => (
-          <div key={c.name} className="flex items-center justify-between text-sm">
+        {COMPETITORS.map((c) => {
+          const Icon = c.icon;
+          return <div key={c.name} className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-white/60">
-              <span className="text-base">{c.emoji}</span>
+              <Icon className="h-4 w-4" />
               <span className="line-through decoration-white/30">{c.name}</span>
             </div>
             <span className="text-white/50 font-mono text-xs">R$ {c.price.toFixed(2).replace('.', ',')}</span>
           </div>
-        ))}
+        })}
 
         <div className="border-t border-white/10 mt-2 pt-2 flex items-center justify-between text-sm">
           <span className="text-white/70 uppercase tracking-wide text-[11px] font-semibold">Total separado</span>
@@ -68,7 +69,7 @@ const PlanComparisonCard = ({ cineflixPrice, planLabel }: PlanComparisonCardProp
           <span className="text-lg font-black">R$ {cineflixPrice.toFixed(2).replace('.', ',')}</span>
         </div>
         <p className="text-[11px] text-white/85 leading-tight">
-          {planLabel} — tudo isso + futebol ao vivo + APK, em um só lugar.
+          {planLabel} — catálogo completo e futebol ao vivo em um só lugar.
         </p>
       </div>
 

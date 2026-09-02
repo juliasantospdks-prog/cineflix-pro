@@ -81,7 +81,7 @@ export const plans: Plan[] = [
     name: 'PLANO MENSAL',
     price: 29.90,
     period: '/mês',
-    icon: '📱',
+    icon: 'mensal',
     features: [
       '30 dias de acesso completo',
       'Todos os filmes e séries',
@@ -94,7 +94,7 @@ export const plans: Plan[] = [
     name: 'PLANO TRIMESTRAL',
     price: 75.90,
     period: '/trimestre',
-    icon: '💎',
+    icon: 'trimestral',
     featured: true,
     discount: 'ECONOMIZE 20%',
     features: [
@@ -110,7 +110,7 @@ export const plans: Plan[] = [
     name: 'PLANO ANUAL VIP',
     price: 300.00,
     period: '/ano',
-    icon: '👑',
+    icon: 'anual',
     discount: 'MELHOR OFERTA',
     features: [
       '365 dias de acesso completo',
@@ -126,7 +126,7 @@ export const plans: Plan[] = [
 export const upsells: Upsell[] = [
   {
     id: 'canal_adulto',
-    name: '🔞 Canal Adulto',
+    name: 'Canal Adulto',
     description: 'Conteúdo adulto exclusivo +18',
     price: 8.99,
   },

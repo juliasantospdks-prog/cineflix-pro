@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Film, Play, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 import { TMDBMovie, getTMDBImageUrl, useTrailerKey } from '@/hooks/useTMDB';
@@ -104,7 +104,7 @@ const HeroSection = ({ onOpenChat, onPlayTrailer, movies }: HeroSectionProps) =>
               <span className="sr-only"> — Assinatura de Streaming e IPTV</span>
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
-              O melhor streaming do Brasil. Filmes e séries exclusivos.
+              Encontre o título que você quer e confira o catálogo antes de assinar.
             </p>
             <Button variant="cinema" size="xl" onClick={onOpenChat} className="animate-pulse-glow">
               <Play className="w-5 h-5 fill-white" />
@@ -206,7 +206,8 @@ const HeroSection = ({ onOpenChat, onPlayTrailer, movies }: HeroSectionProps) =>
                 <span className="text-xs font-bold text-cinema-red tracking-wider">EXCLUSIVO</span>
               </div>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm">
-                <span className="text-xs text-white/80">🎬 Disponível em 4K Ultra HD</span>
+                <Film className="h-3.5 w-3.5 text-white/80" />
+                <span className="text-xs text-white/80">Disponível em 4K Ultra HD</span>
               </div>
             </motion.div>
 

@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { TMDBMovie } from '@/hooks/useTMDB';
 import TMDBMovieCard from './TMDBMovieCard';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,28 @@ interface TMDBGalleryProps {
 
 const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+
+  useEffect(() => {
+    const track = scrollRef.current;
+    if (!track || !movies?.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let frame = 0;
+    let previousTime = performance.now();
+    const move = (time: number) => {
+      const elapsed = Math.min(time - previousTime, 32);
+      previousTime = time;
+      if (!pausedRef.current) {
+        track.scrollLeft += elapsed * 0.035;
+        const loopPoint = track.scrollWidth / 2;
+        if (loopPoint > 0 && track.scrollLeft >= loopPoint) track.scrollLeft -= loopPoint;
+      }
+      frame = requestAnimationFrame(move);
+    };
+
+    frame = requestAnimationFrame(move);
+    return () => cancelAnimationFrame(frame);
+  }, [movies]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -58,7 +80,7 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] as const }}
     >
-      <div className="flex items-center justify-between mb-4 px-4 md:px-8">
+      <div className="flex items-end justify-between mb-4 px-4 md:px-8">
         <motion.div 
           className="flex items-center gap-3"
           initial={{ opacity: 0, x: -20 }}
@@ -67,12 +89,10 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
           transition={{ delay: 0.1, duration: 0.5 }}
         >
           <div className="w-1 h-6 bg-cinema-red rounded-full" />
-          <h2 className="text-lg md:text-2xl font-bold text-white">
-            {title}
-          </h2>
-          <span className="hidden md:inline text-xs text-white/40 bg-white/5 px-2 py-1 rounded-full">
-            {movies.length} títulos
-          </span>
+          <div>
+            <p className="font-cinema text-2xl md:text-4xl text-white leading-none">{title}</p>
+            <p className="mt-1 text-xs md:text-sm text-white/50">Escolhas que o público está assistindo agora</p>
+          </div>
         </motion.div>
         <div className="flex gap-1.5">
           <Button
@@ -98,8 +118,15 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
 
       <motion.div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide px-4 md:px-8 pb-4 snap-x snap-mandatory cursor-grab active:cursor-grabbing"
+        aria-label={`${title}, carrossel automático`}
+        className="flex gap-3 overflow-x-auto scrollbar-hide px-4 md:px-8 pb-4 cursor-grab active:cursor-grabbing"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        onMouseEnter={() => { pausedRef.current = true; }}
+        onMouseLeave={() => { pausedRef.current = false; }}
+        onFocusCapture={() => { pausedRef.current = true; }}
+        onBlurCapture={() => { pausedRef.current = false; }}
+        onTouchStart={() => { pausedRef.current = true; }}
+        onTouchEnd={() => { pausedRef.current = false; }}
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.1}
@@ -109,8 +136,8 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
           }
         }}
       >
-        {movies.map((movie, i) => (
-          <div key={movie.id} className="flex-shrink-0 w-[140px] md:w-[200px] snap-start">
+        {[...movies, ...movies].map((movie, i) => (
+          <div key={`${movie.id}-${i < movies.length ? 'first' : 'loop'}`} className="flex-shrink-0 w-[140px] md:w-[200px]">
             <TMDBMovieCard movie={movie} onPlayTrailer={onPlayTrailer} index={i} />
           </div>
         ))}
