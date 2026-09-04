@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Download, MessageCircle, CheckCircle2, Ticket, Copy, Check } from 'lucide-react';
+import { Download, MessageCircle, CheckCircle2, Ticket, Copy, Check, LockKeyhole } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import cineflixLogo from '@/assets/cineflix-logo.png';
@@ -103,7 +103,7 @@ const ChatReceiptCard = ({ userName, plan, selectedUpsells }: ChatReceiptCardPro
       .map((u) => `• ${u.name} — R$ ${u.price.toFixed(2)}`)
       .join('\n');
     const msg = [
-      `*Comprovante CINEFLIXPAYMENT* 🎬`,
+      `*Comprovante CINEFLIXPAYMENT*`,
       `Pedido: ${orderId}`,
       ``,
       `Cliente: ${userName}`,
@@ -113,7 +113,7 @@ const ChatReceiptCard = ({ userName, plan, selectedUpsells }: ChatReceiptCardPro
       `*Total: R$ ${total.toFixed(2)}*`,
       `Cód. autenticação: ${authCode}`,
       ``,
-      `Olá! Confirmando meu pedido acima 🙏`,
+      `Olá! Quero confirmar meu pedido acima.`,
     ]
       .filter(Boolean)
       .join('\n');
@@ -188,8 +188,8 @@ const ChatReceiptCard = ({ userName, plan, selectedUpsells }: ChatReceiptCardPro
 
         {/* Credenciais */}
         <div className="px-4 pt-3">
-          <p className="text-cinema-red text-[9px] uppercase tracking-widest font-bold mb-1.5">
-            🔐 Seus dados de acesso
+          <p className="flex items-center gap-1.5 text-cinema-red text-[9px] uppercase tracking-widest font-bold mb-1.5">
+            <LockKeyhole className="h-3 w-3" /> Seus dados de acesso
           </p>
           <div className="rounded-lg bg-black/50 border border-cinema-red/20 divide-y divide-white/5">
             {[
