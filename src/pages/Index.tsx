@@ -8,6 +8,7 @@ import PlansSection from '@/components/PlansSection';
 import Footer from '@/components/Footer';
 import ChatFAB from '@/components/ChatFAB';
 import AshleyChat from '@/components/AshleyChat';
+import { movies as localMovies } from '@/data/cineflix';
 import { 
   useTrendingMovies, 
   TMDBMovie 
@@ -31,6 +32,20 @@ const Index = () => {
   };
 
   const { data: trendingMovies, isLoading: trendingLoading } = useTrendingMovies();
+  const carouselMovies: TMDBMovie[] = trendingMovies?.results?.length
+    ? trendingMovies.results
+    : localMovies.map((movie) => ({
+        id: Number(movie.id),
+        title: movie.title,
+        poster_path: null,
+        backdrop_path: null,
+        overview: movie.description,
+        release_date: `${movie.year}-01-01`,
+        vote_average: movie.rating,
+        genre_ids: [],
+        media_type: 'movie',
+        localImage: movie.image,
+      } as TMDBMovie & { localImage: string }));
 
   const handlePlayTrailer = (movie: TMDBMovie) => {
     setSelectedMovie(movie);
@@ -70,8 +85,8 @@ const Index = () => {
         <div className="pb-4">
           <TMDBGallery
             title="Em alta agora na CineflixPayment"
-            movies={trendingMovies?.results}
-            isLoading={trendingLoading}
+            movies={carouselMovies}
+            isLoading={trendingLoading && carouselMovies.length === 0}
             onPlayTrailer={handlePlayTrailer}
           />
         </div>
