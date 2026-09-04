@@ -13,6 +13,7 @@ export interface TMDBMovie {
   vote_average: number;
   genre_ids: number[];
   media_type?: string;
+  localImage?: string;
 }
 
 export interface TMDBResponse {
