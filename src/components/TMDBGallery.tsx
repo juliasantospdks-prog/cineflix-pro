@@ -63,7 +63,7 @@ const TMDBGallery = ({ title, movies, isLoading, onPlayTrailer }: TMDBGalleryPro
 
   if (!movies || movies.length === 0) return null;
 
-  const sectionId = title.includes('Alta') ? 'filmes' 
+  const sectionId = title.toLowerCase().includes('alta') ? 'filmes' 
     : title.includes('Séries') ? 'series' 
     : title.includes('K-Drama') ? 'kdramas' 
     : title.includes('Romance') ? 'romance'
