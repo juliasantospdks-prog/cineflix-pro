@@ -19,6 +19,7 @@ import ashleyUpsell from '@/assets/ashley-upsell.mp3.asset.json';
 import AshleyAudioBubble, { preloadAshleyAudioFiles, getPreloadedAudioDuration } from './AshleyAudioBubble';
 import PlanComparisonCard from './PlanComparisonCard';
 import ChatMovieResults, { MovieHook } from './ChatMovieResults';
+import CaktoCheckoutCard, { CaktoCheckoutPayload } from './CaktoCheckoutCard';
 import { TMDBMovie, TMDBResponse } from '@/hooks/useTMDB';
 
 interface AshleyChatProps {
@@ -34,6 +35,7 @@ type ChatStep =
   | 'recommendations'
   | 'plans'
   | 'upsell'
+  | 'email'
   | 'checkout'
   | 'recovery'
   | 'freeChat';
@@ -93,6 +95,7 @@ interface AshleySession {
   greeted?: boolean;
   userName?: string;
   userGender?: UserGender;
+  userEmail?: string;
   lastSeen?: number;
 }
 
@@ -171,7 +174,7 @@ type QueueItem =
   | { kind: 'plan'; content: string; payload: Plan }
   | { kind: 'comparison'; content: string; payload: { cineflixPrice: number; planLabel: string } }
   | { kind: 'movies'; content: string; payload: { query: string; movies: TMDBMovie[]; hooks?: Record<string, MovieHook> } }
-  | { kind: 'handoff'; content: string; payload: { planName: string; total: number; url: string } };
+  | { kind: 'checkout'; content: string; payload: CaktoCheckoutPayload };
 
 const getMovieTitle = (movie: TMDBMovie) => movie.title || movie.name || 'esse título';
 
@@ -207,6 +210,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const [step, setStep] = useState<ChatStep>('greeting');
   const [userName, setUserName] = useState('');
   const [userGender, setUserGender] = useState<UserGender>(null);
+  const [userEmail, setUserEmail] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -276,7 +280,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
           kind: item.kind,
           audioUrl: item.kind === 'audio' ? (item as { audioUrl?: string }).audioUrl : undefined,
           payload:
-            item.kind === 'plan' || item.kind === 'comparison' || item.kind === 'movies' || item.kind === 'handoff'
+            item.kind === 'plan' || item.kind === 'comparison' || item.kind === 'movies' || item.kind === 'checkout'
               ? (item as { payload: unknown }).payload
               : undefined,
         };
@@ -391,9 +395,9 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     return hooksCacheRef.current;
   }, []);
 
-  const addHandoffCard = useCallback(
-    (data: { planName: string; total: number; url: string }) =>
-      enqueue({ kind: 'handoff', content: 'Finalizar no WhatsApp', payload: data }),
+  const addCheckoutCard = useCallback(
+    (data: CaktoCheckoutPayload) =>
+      enqueue({ kind: 'checkout', content: 'Checkout Cakto', payload: data }),
     [enqueue]
   );
 
@@ -605,6 +609,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
         // Returning device: skip the audio greeting so Ashley doesn't repeat herself.
         const name = session.userName || '';
         if (session.userGender) setUserGender(session.userGender);
+        if (session.userEmail) setUserEmail(session.userEmail);
         if (name) setUserName(name);
         LOG('session.returning — skipping greeting', { name, gender: session.userGender });
         addBotText(
@@ -634,6 +639,36 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     const bad = ['bot', 'robô', 'robo', 'teste', 'test', 'admin', 'null', 'undefined'];
     return !bad.includes(t.toLowerCase());
   };
+
+  const isValidEmail = (text: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text.trim());
+
+  const createCheckout = useCallback(async (email: string) => {
+    if (!selectedPlan) return;
+    setIsAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('cakto-checkout', {
+        body: { action: 'create', name: userName, email, planId: selectedPlan.id },
+      });
+      if (error || !data?.token || !data?.checkoutUrl) throw error || new Error('Checkout inválido');
+      const payload: CaktoCheckoutPayload = {
+        token: data.token,
+        planName: data.planName,
+        total: Number(data.amount),
+        checkoutUrl: data.checkoutUrl,
+        status: data.status,
+      };
+      setStep('checkout');
+      addBotText(`Pronto, ${userName}. Preparei o checkout seguro do ${selectedPlan.name}.`);
+      addCheckoutCard(payload);
+      window.open(payload.checkoutUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Cakto checkout error:', error);
+      setStep('email');
+      addBotText('Não consegui abrir o pagamento agora. Confere seu e-mail e tenta novamente.');
+    } finally {
+      setIsAiLoading(false);
+    }
+  }, [addBotText, addCheckoutCard, selectedPlan, userName]);
 
   const extractName = (text: string): string | null => {
     const patterns = [
@@ -702,6 +737,18 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       } else {
         addBotText('Me diz rapidinho: você é homem ou mulher? Aí eu acerto na recomendação.');
       }
+      return;
+    }
+
+    if (step === 'email') {
+      if (!isValidEmail(text)) {
+        addBotText('Esse e-mail parece incompleto. Digita novamente para eu abrir seu pagamento.');
+        return;
+      }
+      const normalizedEmail = text.trim().toLowerCase();
+      setUserEmail(normalizedEmail);
+      saveSession({ userEmail: normalizedEmail });
+      await createCheckout(normalizedEmail);
       return;
     }
 
@@ -796,25 +843,16 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
   const handleConfirmUpsells = async () => {
     if (!selectedPlan) return;
-    setStep('checkout');
-    const chosenUpsells = selectedUpsells
-      .map((id) => upsells.find((u) => u.id === id))
-      .filter((u): u is Upsell => !!u);
-    const total = calculateTotal();
-
-    const lines = [
-      `Oi! Sou ${userName || 'novo cliente'} e quero fechar o ${selectedPlan.name}.`,
-      `Valor: R$ ${total.toFixed(2)}`,
-    ];
-    if (chosenUpsells.length) {
-      lines.push(`Adicionais: ${chosenUpsells.map((u) => u.name).join(', ')}`);
+    if (selectedUpsells.length) {
+      setSelectedUpsells([]);
+      addBotText('Os adicionais serão contratados depois da ativação. Agora vamos concluir apenas o plano escolhido.');
     }
-    lines.push('Pode me passar o pagamento?');
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
-
-    addBotText(`Fechado, ${userName || 'meu bem'}. O pagamento a gente finaliza direto no WhatsApp comigo.`);
-    addHandoffCard({ planName: selectedPlan.name, total, url });
-    addBotText('Assim que o pagamento for confirmado eu te envio o comprovante e os dados de acesso ali mesmo.');
+    if (userEmail && isValidEmail(userEmail)) {
+      await createCheckout(userEmail);
+      return;
+    }
+    setStep('email');
+    addBotText(`Qual é o seu melhor e-mail, ${userName || 'meu bem'}? Vou usar para identificar o pagamento na Cakto.`);
   };
 
   const handleClose = () => onClose();
@@ -823,6 +861,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
   const canType =
     step === 'name' ||
+    step === 'email' ||
     step === 'gender' ||
     step === 'recovery' ||
     step === 'freeChat' ||
@@ -934,26 +973,11 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
               );
             }
 
-            if (msg.kind === 'handoff' && msg.payload) {
-              const p = msg.payload as { planName: string; total: number; url: string };
+            if (msg.kind === 'checkout' && msg.payload) {
+              const p = msg.payload as CaktoCheckoutPayload;
               return (
                 <div key={msg.id} className="flex justify-start animate-fade-in">
-                  <div className="relative max-w-[92%] w-full bg-[#202c33] rounded-lg overflow-hidden shadow-md">
-                    <div className="p-3">
-                      <p className="text-[11px] uppercase tracking-wide text-white/50 mb-1">Finalizar no WhatsApp</p>
-                      <p className="font-bold text-white text-sm mb-0.5">{p.planName}</p>
-                      <p className="text-2xl font-black text-cinema-glow mb-2">R$ {p.total.toFixed(2)}</p>
-                      <p className="text-xs text-white/70 mb-3">
-                        O pagamento é confirmado no atendimento e o comprovante é enviado só depois que ele cair.
-                      </p>
-                      <a href={p.url} target="_blank" rel="noopener noreferrer">
-                        <Button variant="cinema" size="sm" className="w-full">
-                          Falar com o atendimento agora
-                        </Button>
-                      </a>
-                    </div>
-                    <div className="wa-time text-right px-3 pb-1.5">{time}</div>
-                  </div>
+                  <CaktoCheckoutCard payload={p} />
                 </div>
               );
             }
@@ -1063,7 +1087,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
                   <span className="text-2xl font-black text-white">R$ {calculateTotal().toFixed(2)}</span>
                 </div>
                 <Button variant="cinema" size="lg" className="w-full" onClick={() => void handleConfirmUpsells()}>
-                  ✅ CONFIRMAR E GERAR COMPROVANTE
+                  Continuar para pagamento
                 </Button>
               </div>
             </div>
@@ -1101,6 +1125,8 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
                 placeholder={
                   step === 'name'
                     ? 'Digite seu nome...'
+                    : step === 'email'
+                    ? 'Digite seu e-mail...'
                     : step === 'gender'
                     ? 'Homem ou Mulher?'
                     : 'Mensagem'
