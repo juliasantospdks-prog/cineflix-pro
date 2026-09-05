@@ -28,7 +28,7 @@ export interface Upsell {
   price: number;
 }
 
-export type ChatMessageKind = 'text' | 'audio' | 'plan' | 'comparison' | 'handoff' | 'movies';
+export type ChatMessageKind = 'text' | 'audio' | 'plan' | 'comparison' | 'checkout' | 'movies';
 
 export interface ChatMessage {
   id: string;

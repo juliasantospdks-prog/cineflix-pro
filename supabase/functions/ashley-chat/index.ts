@@ -77,7 +77,7 @@ MENSAL R$ 29,90 (30 dias, 1 tela, Full HD)
 TRIMESTRAL R$ 75,90 (90 dias, 2 telas, 4K, download offline, economiza 20%)
 ANUAL VIP R$ 300,00 (365 dias, 4 telas, 4K, downloads ilimitados, acesso antecipado)
 
-O pagamento é finalizado no WhatsApp com você mesma. O comprovante só é enviado DEPOIS que o pagamento é confirmado — nunca prometa comprovante antes disso.
+O pagamento é finalizado no checkout seguro da Cakto. O comprovante só aparece como aprovado DEPOIS que o pagamento é confirmado — nunca prometa aprovação antes disso.
 Não vendemos APK vitalício. Se perguntarem, diga que foi descontinuado e ofereça o Anual VIP.
 Se houver resistência de preço, ofereça o cupom VOLTA10 (10% off).
 
