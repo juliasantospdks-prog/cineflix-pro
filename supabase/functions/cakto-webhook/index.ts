@@ -1,10 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cakto-signature",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -77,6 +72,32 @@ Deno.serve(async (req) => {
   if (error) {
     console.error("[cakto-webhook] insert error", error);
     return json({ error: "insert_failed", detail: error.message }, 500);
+  }
+
+  // Relaciona o evento ao checkout mais recente do mesmo cliente.
+  // A Cakto devolve o e-mail preenchido no checkout, sem expor a tabela ao navegador.
+  if (row.customer_email && ["pending", "paid", "refused", "refunded"].includes(row.status)) {
+    const normalizedEmail = String(row.customer_email).trim().toLowerCase();
+    const { data: session } = await supabase
+      .from("cakto_checkout_sessions")
+      .select("id")
+      .ilike("customer_email", normalizedEmail)
+      .in("status", ["pending", "refused"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (session) {
+      const { error: updateError } = await supabase
+        .from("cakto_checkout_sessions")
+        .update({
+          status: row.status,
+          cakto_transaction_id: row.transaction_id,
+          occurred_at: row.occurred_at,
+        })
+        .eq("id", session.id);
+      if (updateError) console.error("[cakto-webhook] session update error", updateError);
+    }
   }
 
   // Forward purchase events to GA4 via Measurement Protocol (optional — only if creds set)
