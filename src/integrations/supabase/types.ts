@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      cakto_checkout_sessions: {
+        Row: {
+          amount: number
+          cakto_transaction_id: string | null
+          checkout_url: string
+          created_at: string
+          customer_email: string
+          customer_name: string
+          id: string
+          occurred_at: string | null
+          plan_id: string
+          plan_name: string
+          public_token: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          cakto_transaction_id?: string | null
+          checkout_url: string
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          id?: string
+          occurred_at?: string | null
+          plan_id: string
+          plan_name: string
+          public_token?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          cakto_transaction_id?: string | null
+          checkout_url?: string
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          id?: string
+          occurred_at?: string | null
+          plan_id?: string
+          plan_name?: string
+          public_token?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cakto_sales: {
         Row: {
           amount: number
