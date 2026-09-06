@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, X, Check, CheckCheck, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChatMessage, Plan, Upsell } from '@/types';
-import { plans, upsells, WHATSAPP_NUMBER } from '@/data/cineflix';
+import { ChatMessage, Plan } from '@/types';
+import { plans } from '@/data/cineflix';
 import { cn } from '@/lib/utils';
 import { sanitizeAshleyText } from '@/lib/sanitizeText';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +15,6 @@ import ashleyPitchMensal from '@/assets/ashley-pitch-mensal.mp3.asset.json';
 import ashleyPitchTrimestral from '@/assets/ashley-pitch-trimestral.mp3.asset.json';
 import ashleyPitchAnual from '@/assets/ashley-pitch-anual.mp3.asset.json';
 import ashleyComparacao from '@/assets/ashley-comparacao.mp3.asset.json';
-import ashleyUpsell from '@/assets/ashley-upsell.mp3.asset.json';
 import AshleyAudioBubble, { preloadAshleyAudioFiles, getPreloadedAudioDuration } from './AshleyAudioBubble';
 import PlanComparisonCard from './PlanComparisonCard';
 import ChatMovieResults, { MovieHook } from './ChatMovieResults';
@@ -59,7 +58,6 @@ const ASHLEY_AUDIO_URLS = [
   ashleyPitchTrimestral.url,
   ashleyPitchAnual.url,
   ashleyComparacao.url,
-  ashleyUpsell.url,
 ];
 
 const PLAN_AUDIO: Record<string, string> = {
@@ -212,7 +210,6 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
   const [userGender, setUserGender] = useState<UserGender>(null);
   const [userEmail, setUserEmail] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; content: string }>>([]);
   const [planPresentIndex, setPlanPresentIndex] = useState(0);
@@ -817,38 +814,13 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
     void showGenderRecommendations(gender);
   };
 
-  const handleSelectPlan = (plan: Plan) => {
+  const handleSelectPlan = async (plan: Plan) => {
     if (isAiLoading) return;
     setSelectedPlan(plan);
     addUserMessage(`Quero o ${plan.name}`);
-    addBotText(`Boa escolha, ${userName || 'meu bem'}. O ${plan.name} entra ativo hoje mesmo.`);
-    addBotAudio('Antes de finalizar, dá uma olhada nos adicionais.', ashleyUpsell.url);
-    setStep('upsell');
-  };
-
-  const toggleUpsell = (upsellId: string) => {
-    setSelectedUpsells((prev) =>
-      prev.includes(upsellId) ? prev.filter((id) => id !== upsellId) : [...prev, upsellId]
-    );
-  };
-
-  const calculateTotal = (): number => {
-    let total = selectedPlan?.price || 0;
-    selectedUpsells.forEach((id) => {
-      const u = upsells.find((x) => x.id === id);
-      if (u) total += u.price;
-    });
-    return total;
-  };
-
-  const handleConfirmUpsells = async () => {
-    if (!selectedPlan) return;
-    if (selectedUpsells.length) {
-      setSelectedUpsells([]);
-      addBotText('Os adicionais serão contratados depois da ativação. Agora vamos concluir apenas o plano escolhido.');
-    }
+    addBotText(`Boa escolha, ${userName || 'meu bem'}. Vou preparar o checkout do ${plan.name}.`);
     if (userEmail && isValidEmail(userEmail)) {
-      await createCheckout(userEmail);
+      window.setTimeout(() => void createCheckout(userEmail), 500);
       return;
     }
     setStep('email');
@@ -938,7 +910,7 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
                         variant="cinema"
                         size="sm"
                         className="w-full"
-                        onClick={() => handleSelectPlan(plan)}
+                        onClick={() => void handleSelectPlan(plan)}
                       >
                         ✅ Escolher este plano
                       </Button>
@@ -1045,53 +1017,6 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
                 </Button>
               </div>
             )}
-
-          {/* Upsells */}
-          {step === 'upsell' && !isTyping && (
-            <div className="space-y-2 pt-1 animate-slide-up">
-              {upsells.map((u) => {
-                const active = selectedUpsells.includes(u.id);
-                return (
-                  <div
-                    key={u.id}
-                    onClick={() => toggleUpsell(u.id)}
-                    className={cn(
-                      'flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border',
-                      active
-                        ? 'bg-cinema-red/15 border-cinema-red/60'
-                        : 'bg-[#202c33] border-white/10 hover:bg-[#2a3942]'
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        'w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border',
-                        active ? 'bg-cinema-red border-cinema-red' : 'border-white/30'
-                      )}
-                    >
-                      {active && <Check className="w-3.5 h-3.5 text-white" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-white text-sm">{u.name}</div>
-                      <div className="text-xs text-white/60 truncate">{u.description}</div>
-                    </div>
-                    <span className="text-cinema-glow font-bold text-sm whitespace-nowrap">
-                      R$ {u.price.toFixed(2)}
-                    </span>
-                  </div>
-                );
-              })}
-
-              <div className="pt-3 border-t border-white/10">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-white/60 text-sm">Total:</span>
-                  <span className="text-2xl font-black text-white">R$ {calculateTotal().toFixed(2)}</span>
-                </div>
-                <Button variant="cinema" size="lg" className="w-full" onClick={() => void handleConfirmUpsells()}>
-                  Continuar para pagamento
-                </Button>
-              </div>
-            </div>
-          )}
 
           {/* Typing indicator */}
           {(isTyping || isAiLoading) && (
