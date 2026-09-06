@@ -523,14 +523,19 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
 
         if (decision.intent === 'plans' || planId) {
           if (reply) addBotText(reply);
-          const plan = planId ? plans.find((p) => p.id === planId) : null;
+          const requestedPlanId = /\b(anual|ano|vip)\b/i.test(text)
+            ? 'anual'
+            : /\b(trimestral|trimestre|3\s*meses)\b/i.test(text)
+            ? 'trimestral'
+            : 'mensal';
+          const plan = plans.find((p) => p.id === requestedPlanId);
           if (plan) {
             addBotAudio(plan.name, PLAN_AUDIO[plan.id] || ashleyPitchMensal.url);
             addPlanCard(plan);
             addComparisonCard(plan.price, plan.name);
+            setPlanPresentIndex(PLAN_ORDER.indexOf(plan.id));
+            setPlanPitchDone(true);
             setStep('plans');
-          } else {
-            await presentPlanAtRef.current?.(0);
           }
           return;
         }
@@ -657,7 +662,6 @@ const AshleyChat = ({ isOpen, onClose, initialMessage }: AshleyChatProps) => {
       setStep('checkout');
       addBotText(`Pronto, ${userName}. Preparei o checkout seguro do ${selectedPlan.name}.`);
       addCheckoutCard(payload);
-      window.open(payload.checkoutUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error('Cakto checkout error:', error);
       setStep('email');

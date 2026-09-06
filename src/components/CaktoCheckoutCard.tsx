@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Clock3, ExternalLink, RefreshCw, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock3, CreditCard, RefreshCw, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -23,6 +23,7 @@ const labels: Record<SaleStatus, { title: string; description: string }> = {
 const CaktoCheckoutCard = ({ payload }: { payload: CaktoCheckoutPayload }) => {
   const [status, setStatus] = useState<SaleStatus>(payload.status);
   const [checking, setChecking] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(status === 'pending');
 
   const refresh = useCallback(async () => {
     setChecking(true);
@@ -58,12 +59,20 @@ const CaktoCheckoutCard = ({ payload }: { payload: CaktoCheckoutPayload }) => {
         <p className="font-bold text-white text-sm">{payload.planName}</p>
         <p className="text-2xl font-black text-cinema-glow mb-2">R$ {payload.total.toFixed(2)}</p>
         <p className="text-xs text-white/70 mb-3">{copy.description}</p>
-        {status !== 'paid' && status !== 'refunded' && (
-          <Button variant="cinema" size="sm" className="w-full gap-2" asChild>
-            <a href={payload.checkoutUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4" /> Abrir checkout seguro
-            </a>
+        {status !== 'paid' && status !== 'refunded' && !showCheckout && (
+          <Button variant="cinema" size="sm" className="w-full gap-2" onClick={() => setShowCheckout(true)}>
+            <CreditCard className="h-4 w-4" /> Abrir Pix aqui no chat
           </Button>
+        )}
+        {showCheckout && status !== 'paid' && status !== 'refunded' && (
+          <div className="mt-3 overflow-hidden rounded-md border border-border bg-background">
+            <iframe
+              src={payload.checkoutUrl}
+              title={`Pagamento do ${payload.planName}`}
+              className="h-[520px] w-full bg-background"
+              allow="payment; clipboard-write"
+            />
+          </div>
         )}
         {status === 'pending' && (
           <Button variant="ghost" size="sm" className="mt-1 w-full gap-2 text-white/70" onClick={() => void refresh()} disabled={checking}>

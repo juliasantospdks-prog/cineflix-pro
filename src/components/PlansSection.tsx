@@ -322,11 +322,6 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
                 className="relative w-full max-w-sm h-full flex flex-col rounded-2xl border transition-all duration-500 cursor-pointer bg-gradient-to-b from-cinema-red/20 via-cinema-panel to-cinema-dark border-cinema-red/60 hover:border-cinema-red shadow-lg hover:shadow-glow overflow-hidden group"
                 onClick={() => handleSelectPlan(plan)}
               >
-                {/* Animated border glow */}
-                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-                  <div className="absolute inset-[-1px] rounded-2xl bg-gradient-to-r from-cinema-red via-cinema-glow to-cinema-red animate-spin-slow opacity-60" />
-                </div>
-
                 {/* Featured badge */}
                 {plan.discount && (
                   <div className="absolute top-0 left-0 right-0 z-10">
@@ -339,17 +334,15 @@ const PlansSection = ({ onOpenChatWithPlan }: PlansSectionProps) => {
                 <div className={cn("relative z-10 p-6 flex flex-col flex-1 w-full", plan.discount && "pt-10")}>
                   {/* Icon and name */}
                   <div className="flex flex-col items-center mb-5">
-                    <motion.div 
+                    <div 
                       className="w-20 h-20 rounded-2xl flex items-center justify-center mb-3 overflow-hidden"
-                      whileHover={{ rotate: [0, -5, 5, 0], scale: 1.05 }}
-                      transition={{ duration: 0.5 }}
                     >
                       <img 
                         src={getIcon(plan.id)} 
                         alt={plan.name} 
                         className="w-20 h-20 object-contain"
                       />
-                    </motion.div>
+                    </div>
                     <h3 className="text-base font-bold text-white text-center leading-tight">{plan.name}</h3>
                   </div>
 
