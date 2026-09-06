@@ -59,11 +59,11 @@ const CaktoCheckoutCard = ({ payload }: { payload: CaktoCheckoutPayload }) => {
         <p className="text-2xl font-black text-cinema-glow mb-2">R$ {payload.total.toFixed(2)}</p>
         <p className="text-xs text-white/70 mb-3">{copy.description}</p>
         {status !== 'paid' && status !== 'refunded' && (
-          <a href={payload.checkoutUrl} target="_blank" rel="noopener noreferrer">
-            <Button variant="cinema" size="sm" className="w-full gap-2">
+          <Button variant="cinema" size="sm" className="w-full gap-2" asChild>
+            <a href={payload.checkoutUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4" /> Abrir checkout seguro
-            </Button>
-          </a>
+            </a>
+          </Button>
         )}
         {status === 'pending' && (
           <Button variant="ghost" size="sm" className="mt-1 w-full gap-2 text-white/70" onClick={() => void refresh()} disabled={checking}>
