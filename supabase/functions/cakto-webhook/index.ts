@@ -7,15 +7,26 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+type JsonObject = Record<string, unknown>;
+
+const asObject = (value: unknown): JsonObject =>
+  value !== null && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : {};
+
+const firstText = (...values: unknown[]): string | null => {
+  const value = values.find((item) => typeof item === "string" && item.trim());
+  return typeof value === "string" ? value.trim() : null;
+};
+
 // Normalize Cakto payloads (they vary by event)
-function normalize(payload: any) {
-  const data = payload?.data || payload;
-  const customer = data?.customer || data?.cliente || {};
-  const transaction = data?.transaction || data?.transacao || data;
+function normalize(input: unknown) {
+  const payload = asObject(input);
+  const data = asObject(payload.data ?? payload);
+  const customer = asObject(data.customer ?? data.cliente);
+  const transaction = asObject(data.transaction ?? data.transacao ?? data);
 
   // Map Cakto event/status into our buckets
-  const rawEvent = String(payload?.event || payload?.type || data?.event || "").toLowerCase();
-  const rawStatus = String(transaction?.status || data?.status || "").toLowerCase();
+  const rawEvent = String(payload.event || payload.type || data.event || "").toLowerCase();
+  const rawStatus = String(transaction.status || data.status || "").toLowerCase();
 
   let event_type = "unknown";
   let status = rawStatus || "unknown";
@@ -30,20 +41,20 @@ function normalize(payload: any) {
   }
 
   const amount = Number(
-    transaction?.amount ?? transaction?.value ?? data?.amount ?? data?.value ?? data?.total ?? 0,
+    transaction.amount ?? transaction.value ?? data.amount ?? data.value ?? data.total ?? 0,
   );
 
   return {
     event_type,
     status,
-    transaction_id: String(transaction?.id || transaction?.transaction_id || data?.id || "") || null,
-    customer_name: customer?.name || customer?.nome || data?.customer_name || null,
-    customer_email: customer?.email || data?.customer_email || null,
-    customer_phone: customer?.phone || customer?.telefone || data?.customer_phone || null,
+    transaction_id: firstText(transaction.id, transaction.transaction_id, data.id),
+    customer_name: firstText(customer.name, customer.nome, data.customer_name),
+    customer_email: firstText(customer.email, data.customer_email),
+    customer_phone: firstText(customer.phone, customer.telefone, data.customer_phone),
     amount: isFinite(amount) ? amount : 0,
-    currency: (data?.currency || "BRL").toUpperCase(),
-    payment_method: data?.payment_method || data?.method || "pix",
-    occurred_at: data?.created_at || data?.paid_at || new Date().toISOString(),
+    currency: String(data.currency || "BRL").toUpperCase(),
+    payment_method: firstText(data.payment_method, data.method) || "pix",
+    occurred_at: firstText(data.created_at, data.paid_at) || new Date().toISOString(),
   };
 }
 
@@ -51,17 +62,17 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
-  let payload: any;
+  let payload: unknown;
   try {
     payload = await req.json();
   } catch {
     return json({ error: "invalid_json" }, 400);
   }
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceRoleKey) return json({ error: "server_not_configured" }, 500);
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
 
   const row = normalize(payload);
   const { error } = await supabase.from("cakto_sales").insert({
